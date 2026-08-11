@@ -5,6 +5,8 @@
 |-- .github/workflows/       # CI and container publishing
 |-- bridge/                  # Optional LG cloud bridge
 |-- cloud/                   # ThinQ endpoints and MQTT discovery
+|-- docs/                    # Reverse-engineering investigation notes
+|   `-- rac-tlv-sensor-investigation.md # RAC TLV sensor observations
 |-- html/                    # Management interface assets
 |   `-- i18n.js              # Browser-language management UI translations
 |-- management/              # Management web server
