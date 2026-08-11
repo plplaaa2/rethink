@@ -14,3 +14,4 @@
 {"version":"dev-0.1.13","date":"2026-08-11","changes":["Promoted the Home Assistant add-on version from 0.1.1 to 0.1.2","Added a dedicated 0.1.2 release changelog for RAC controls, sensor handling, and MQTT port conflict changes"]}
 {"version":"dev-0.1.14","date":"2026-08-11","changes":["Aligned the add-on DOCS with the Korean README and its hostname, required-port, and MQTT broker conflict guidance"]}
 {"version":"dev-0.1.15","date":"2026-08-11","changes":["Documented ipTIME DHCP and DNS setup for routing appliance queries through AdGuard Home","Added AdGuard Home DNS rewrite, cache flush, verification, and appliance reconnection instructions"]}
+{"version":"dev-0.1.16","date":"2026-08-11","changes":["Separated device and add-on changes in the 0.1.2 add-on release notes","Corrected AdGuard Home add-on DNS instructions to use the Home Assistant host IP while retaining standalone-host guidance"]}

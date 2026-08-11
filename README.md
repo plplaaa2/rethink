@@ -27,15 +27,15 @@ Rethink 애드온은 MQTT Broker 애드온과의 호스트 포트 충돌을 피�
 
 ## ipTIME 및 AdGuard Home 설정
 
-다음은 Home Assistant가 `192.168.1.102`, AdGuard Home이 `192.168.1.105`인 경우의 예시입니다. 실제 환경에서는 각 장치의 고정 IP로 바꾸십시오.
+다음은 Home Assistant가 `192.168.1.102`인 경우의 예시입니다. AdGuard Home 애드온은 Home Assistant 호스트에서 DNS를 제공하므로 DNS 서버 주소도 `192.168.1.102`를 사용합니다. AdGuard Home을 별도 장치나 VM에 설치한 경우에만 해당 설치 위치의 별도 IP를 사용하십시오.
 
-1. ipTIME의 DHCP 고정 할당 기능으로 Home Assistant와 AdGuard Home의 IP가 바뀌지 않도록 설정합니다.
-2. ipTIME의 DHCP/DNS 설정에서 클라이언트에 배포할 DNS 서버를 AdGuard Home 주소(`192.168.1.105`)로 지정합니다. 메뉴 이름은 ipTIME 펌웨어에 따라 다를 수 있습니다.
+1. ipTIME의 DHCP 고정 할당 기능으로 Home Assistant의 IP가 바뀌지 않도록 설정합니다. 독립 설치형 AdGuard Home을 사용한다면 해당 장치의 IP도 고정합니다.
+2. ipTIME의 DHCP/DNS 설정에서 클라이언트에 배포할 DNS 서버를 AdGuard Home이 설치된 호스트 주소로 지정합니다. AdGuard Home 애드온이면 Home Assistant 주소(`192.168.1.102`), 독립 설치형이면 해당 장치의 주소를 사용합니다. 메뉴 이름은 ipTIME 펌웨어에 따라 다를 수 있습니다.
 3. AdGuard Home의 **필터 → DNS 재작성**에서 `rethink.home.arpa`가 Home Assistant 주소(`192.168.1.102`)를 반환하도록 추가합니다.
 4. `common.lgthinq.com`은 재작성하지 않습니다. Rethink 연결에는 설정 옵션의 호스트 이름만 재작성하면 됩니다.
 5. AdGuard Home의 DNS 캐시를 비우고, 가전의 Wi-Fi를 다시 연결하거나 네트워크 설정을 초기화한 뒤 재등록합니다.
 
-PC에서 `nslookup rethink.home.arpa 192.168.1.105`를 실행했을 때 Home Assistant 주소가 반환되어야 합니다. DNS가 정확해도 가전이 연결되지 않으면 ipTIME의 게스트 네트워크·AP 격리 기능이 꺼져 있는지, 필수 포트가 같은 LAN에서 차단되지 않는지 확인하십시오.
+AdGuard Home 애드온 구성에서는 PC에서 `nslookup rethink.home.arpa 192.168.1.102`를 실행했을 때 Home Assistant 주소가 반환되어야 합니다. 독립 설치형은 명령의 DNS 서버 주소를 AdGuard Home 호스트 IP로 바꾸십시오. DNS가 정확해도 가전이 연결되지 않으면 ipTIME의 게스트 네트워크·AP 격리 기능이 꺼져 있는지, 필수 포트가 같은 LAN에서 차단되지 않는지 확인하십시오.
 
 필수 포트와 상세 옵션은 [애드온 사용 설명서](rethink-addon/DOCS.md)를 참고하십시오. 가전 및 관리 포트를 인터넷에 직접 공개하지 마십시오.
 
