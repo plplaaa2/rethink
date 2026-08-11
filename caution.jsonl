@@ -7,3 +7,4 @@
 {"date":"2026-08-10","area":"dns","caution":"Use rethink.home.arpa as the default unicast DNS hostname; do not use an mDNS-only .local name for appliance provisioning."}
 {"date":"2026-08-11","area":"rac-sensors","caution":"Treat RAC pipe temperature raw values 0 and 1 as unsupported sentinels; do not publish them as implausible negative temperatures."}
 {"date":"2026-08-11","area":"rac-controls","caution":"RAC indirect wind shares tag 0x321 with vertical swing; keep a single read-field owner and publish the derived switch state without overwriting the climate field mapping."}
+{"date":"2026-08-11","area":"rac-controls","caution":"Keep RAC auto dry as a non-optimistic switch backed by tag 0x20e device reports; do not duplicate it as a binary sensor."}

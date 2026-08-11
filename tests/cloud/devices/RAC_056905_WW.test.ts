@@ -49,6 +49,10 @@ const WRITE_INDIRECT_WIND_ON_HEX = '0101040000006502010102C8416527'
 const WRITE_INDIRECT_WIND_OFF_HEX = '0101040000006502010102C84615C0'
 const STATE_INDIRECT_WIND_ON_HEX = '0000040000008702040106C841BF60031CAFC7'
 const STATE_INDIRECT_WIND_OFF_HEX = '0000040000008702046A09C846CC5056BF6001C78E4D'
+const WRITE_AUTO_DRY_ON_HEX = '010104000000650201010283816D5D'
+const WRITE_AUTO_DRY_OFF_HEX = '010104000000650201010283807D7C'
+const STATE_AUTO_DRY_ON_HEX = '000004000000870204FE0283817DA9'
+const STATE_AUTO_DRY_OFF_HEX = '0000040000008702045502838099E1'
 
 function makeDevice() {
     const ha = new MockHAConnection()
@@ -105,6 +109,8 @@ describe(MODEL_ID, () => {
         assert.ok(components.jet, 'jet (because 0x2CD bits 0x1|0x2)')
         assert.ok(components.energysave, 'energysave (because 0x2CC bit 0x2)')
         assert.ok(components.autodry, 'autodry (because 0x2CC bit 0x4)')
+        assert.equal(components.autodry.platform, 'switch')
+        assert.equal(components.autodry.optimistic, undefined, 'switch uses reported device state')
         assert.ok(components.sleeptimer, 'sleeptimer (because 0x2D3 bit 0x1)')
         assert.ok(components.starttimer, 'starttimer (because 0x2D3 bit 0x4)')
         assert.ok(components.stoptimer, 'stoptimer (because 0x2D3 bit 0x4)')
@@ -213,6 +219,25 @@ describe(MODEL_ID, () => {
 
         thinq.emit('data', buf(STATE_INDIRECT_WIND_OFF_HEX))
         assert.equal(ha.getProperty(DEVICE_ID, 'indirectwind', 'state'), 'OFF')
+
+        dev.drop()
+    })
+
+    test('auto dry switch maps ON/OFF commands and reported states', (t) => {
+        const { thinq, dev, ha } = buildReadyDevice(t)
+
+        ha.setProperty(DEVICE_ID, 'autodry', 'command', 'ON')
+        assert.equal(hex(thinq.outbox[0]), WRITE_AUTO_DRY_ON_HEX)
+
+        thinq.emit('data', buf(STATE_AUTO_DRY_ON_HEX))
+        assert.equal(ha.getProperty(DEVICE_ID, 'autodry', 'state'), 'ON')
+
+        thinq.resetRecorder()
+        ha.setProperty(DEVICE_ID, 'autodry', 'command', 'OFF')
+        assert.equal(hex(thinq.outbox[0]), WRITE_AUTO_DRY_OFF_HEX)
+
+        thinq.emit('data', buf(STATE_AUTO_DRY_OFF_HEX))
+        assert.equal(ha.getProperty(DEVICE_ID, 'autodry', 'state'), 'OFF')
 
         dev.drop()
     })

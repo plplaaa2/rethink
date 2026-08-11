@@ -616,12 +616,13 @@ export default class Device extends TLVDevice {
         }
 
         if (this.raw_clip_state[0x2cc] & 4) {
+            // Auto dry is a state-backed switch; related coverage lives in
+            // tests/cloud/devices/RAC_056905_WW.test.ts.
             const compADry = {
-                platform: 'binary_sensor',
+                platform: 'switch',
                 unique_id: '$deviceid-autodry',
                 name: 'Auto dry',
                 icon: 'mdi:hair-dryer',
-                entity_category: 'diagnostic',
             }
             const compADryRem = {
                 platform: 'sensor',
@@ -639,7 +640,7 @@ export default class Device extends TLVDevice {
                 id: 0x20e,
                 name: '',
                 comp: 'autodry',
-                writable: false,
+                write_xform: (val) => (val === 'ON' ? 1 : 0),
                 read_xform: (raw) => (raw ? 'ON' : 'OFF'),
             })
 
