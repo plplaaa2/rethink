@@ -92,6 +92,7 @@ describe(MODEL_ID, () => {
         const components = device.config!.components as Record<string, Record<string, unknown>>
         assert.ok(components.climate, 'climate component')
         assert.equal(components.climate.platform, 'climate')
+        assert.equal(components.climate.temp_step, 1, 'target temperature changes in whole degrees')
 
         // Capability bits from the captured caps response unlocked these optional components.
         assert.ok(components.jet, 'jet (because 0x2CD bits 0x1|0x2)')
@@ -175,6 +176,17 @@ describe(MODEL_ID, () => {
 
         assert.equal(thinq.outbox.length, 1)
         assert.equal(hex(thinq.outbox[0]), WRITE_MODE_FAN_ONLY_HEX.toUpperCase())
+
+        dev.drop()
+    })
+
+    test('HA target temperature is rounded to a whole degree', (t) => {
+        const { thinq, dev, ha } = buildReadyDevice(t)
+
+        ha.setProperty(DEVICE_ID, 'climate', 'temperature_command', '20.5')
+
+        assert.equal(thinq.outbox.length, 1)
+        assert.equal(dev.raw_clip_state[0x1fe], 42, '20.5 C command rounded to 21 C protocol value')
 
         dev.drop()
     })

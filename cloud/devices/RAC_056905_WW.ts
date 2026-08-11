@@ -274,8 +274,9 @@ export default class Device extends TLVDevice {
                     name: null,
                     action_topic: '$this/climate-action',
                     temperature_unit: 'C',
-                    /* TODO: detect 0.5 C vs 1 C step */
-                    temp_step: 0.5,
+                    /* Target setpoint changes are supported in whole degrees only.
+                     * Related test: tests/cloud/devices/RAC_056905_WW.test.ts. */
+                    temp_step: 1,
                     precision: 0.5,
                     /* TODO: some devices report these temp ranges via tags 0x2e1 - 0x2ec */
                     min_temp: 18,
@@ -390,7 +391,7 @@ export default class Device extends TLVDevice {
             name: 'temperature',
             comp: 'climate',
             read_xform: (raw) => raw / 2,
-            write_xform: (val) => Math.round(Number(val) * 2),
+            write_xform: (val) => Math.round(Number(val)) * 2,
             write_attach: [0x1f9, 0x1fa],
         })
 
