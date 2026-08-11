@@ -22,7 +22,7 @@ Rethink 애드온은 MQTT Broker 애드온과의 충돌을 피하기 위해 내�
 
 ## ipTIME 공유기 설정
 
-1. Home Assistant에 DHCP 고정 할당을 설정합니다. 예를 들어 Home Assistant는 `192.168.1.102`를 사용할 수 있습니다. AdGuard Home을 별도 장치나 VM에 설치했다면 해당 호스트에도 고정 IP를 할당합니다.
+1. Home Assistant에 DHCP 고정 할당을 설정합니다. 예를 들어 Home Assistant의 `IP`를 사용할 수 있습니다. AdGuard Home을 별도 장치나 VM에 설치했다면 해당 호스트에도 고정 IP를 할당합니다.
 2. DHCP 서버가 클라이언트에 안내하는 DNS 서버를 AdGuard Home이 설치된 호스트의 고정 IP로 지정합니다. AdGuard Home 애드온이면 Home Assistant 주소(예: `192.168.1.102`)를 사용하고, 독립 설치형이면 해당 장치나 VM의 주소를 사용합니다. ipTIME 펌웨어에 따라 이 항목은 DHCP 서버 설정이나 인터넷 DNS 설정에 있을 수 있습니다.
 3. 가전, Home Assistant, AdGuard Home이 서로 통신할 수 있도록 같은 LAN을 사용하고 게스트 네트워크 또는 AP 격리 기능을 사용하지 않습니다.
 4. 인터넷 포트 포워딩은 필요하지 않습니다. 필수 포트는 로컬 네트워크에서만 접근 가능하게 유지합니다.
