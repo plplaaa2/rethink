@@ -14,4 +14,6 @@ LG ThinQ 가전을 로컬 Rethink 서버에 연결하고 MQTT Discovery를 통�
 
 Rethink 애드온은 MQTT Broker 애드온과의 충돌을 피하기 위해 내부 비암호화 MQTT 포트 `1884`를 Home Assistant 호스트에 공개하지 않습니다. ThinQ 2 연결에는 `8883`이 반드시 필요하므로 MQTT Broker 애드온이 호스트 포트 `8883`을 공개 중이라면 Broker 애드온 쪽의 해당 포트 설정을 제거한 뒤 Rethink를 시작해야 합니다. 일반적인 Broker 연결 포트 `1883` 설정에는 영향이 없습니다.
 
+ipTIME에서는 Home Assistant와 AdGuard Home에 고정 IP를 할당하고 DHCP 클라이언트가 AdGuard Home을 DNS 서버로 사용하도록 설정합니다. AdGuard Home에는 `rethink.home.arpa`만 Home Assistant IP로 연결하는 DNS 재작성을 추가하고 `common.lgthinq.com`은 재작성하지 마십시오. 캐시를 비운 뒤 가전의 Wi-Fi를 다시 연결하거나 네트워크 설정을 초기화해 재등록합니다.
+
 설정 옵션과 필수 포트는 [전체 사용 설명서](DOCS.md)를 참고하십시오.

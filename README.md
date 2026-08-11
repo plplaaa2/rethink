@@ -25,6 +25,18 @@ MQTT 자동 검색이 활성화되어 있으면 Supervisor가 제공하는 MQTT 
 
 Rethink 애드온은 MQTT Broker 애드온과의 호스트 포트 충돌을 피하기 위해 내부 포트 `1884`를 공개하지 않습니다. ThinQ 2 기기 연결에는 Rethink의 `8883` 포트가 필요하므로 MQTT Broker 애드온이 호스트 포트 `8883`을 사용 중이면 Broker 애드온 설정에서 해당 포트 공개를 제거해야 합니다. MQTT Broker의 일반 연결 포트 `1883`은 그대로 사용할 수 있습니다.
 
+## ipTIME 및 AdGuard Home 설정
+
+다음은 Home Assistant가 `192.168.1.102`, AdGuard Home이 `192.168.1.105`인 경우의 예시입니다. 실제 환경에서는 각 장치의 고정 IP로 바꾸십시오.
+
+1. ipTIME의 DHCP 고정 할당 기능으로 Home Assistant와 AdGuard Home의 IP가 바뀌지 않도록 설정합니다.
+2. ipTIME의 DHCP/DNS 설정에서 클라이언트에 배포할 DNS 서버를 AdGuard Home 주소(`192.168.1.105`)로 지정합니다. 메뉴 이름은 ipTIME 펌웨어에 따라 다를 수 있습니다.
+3. AdGuard Home의 **필터 → DNS 재작성**에서 `rethink.home.arpa`가 Home Assistant 주소(`192.168.1.102`)를 반환하도록 추가합니다.
+4. `common.lgthinq.com`은 재작성하지 않습니다. Rethink 연결에는 설정 옵션의 호스트 이름만 재작성하면 됩니다.
+5. AdGuard Home의 DNS 캐시를 비우고, 가전의 Wi-Fi를 다시 연결하거나 네트워크 설정을 초기화한 뒤 재등록합니다.
+
+PC에서 `nslookup rethink.home.arpa 192.168.1.105`를 실행했을 때 Home Assistant 주소가 반환되어야 합니다. DNS가 정확해도 가전이 연결되지 않으면 ipTIME의 게스트 네트워크·AP 격리 기능이 꺼져 있는지, 필수 포트가 같은 LAN에서 차단되지 않는지 확인하십시오.
+
 필수 포트와 상세 옵션은 [애드온 사용 설명서](rethink-addon/DOCS.md)를 참고하십시오. 가전 및 관리 포트를 인터넷에 직접 공개하지 마십시오.
 
 ## 원본 Rethink 프로젝트
