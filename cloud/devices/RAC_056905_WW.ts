@@ -231,6 +231,13 @@ export default class Device extends TLVDevice {
 
         this.HA.publishProperty(this.id, 'filterused', this.filterUsedTime)
         this.HA.publishProperty(this.id, 'filterlife', this.filterLifeTime)
+        // Derive filter contamination from the appliance usage counters.
+        // Related files: tests/cloud/devices/RAC_056905_WW.test.ts,
+        // rethink-addon/DOCS.md.
+        if (this.filterLifeTime > 0) {
+            const dirtyPercent = Math.min(100, Math.max(0, (this.filterUsedTime / this.filterLifeTime) * 100))
+            this.HA.publishProperty(this.id, 'filterdirty', Math.round(dirtyPercent * 10) / 10)
+        }
         this.HA.publishProperty(this.id, 'filterchangeddate', changedDate)
     }
 
@@ -827,6 +834,17 @@ export default class Device extends TLVDevice {
                 entity_category: 'diagnostic',
             }
             config['components']['filterlife'] = filterLife
+            const filterDirty = {
+                platform: 'sensor',
+                unique_id: '$deviceid-filterdirty',
+                state_topic: '$this/filterdirty',
+                name: 'Filter dirty',
+                icon: 'mdi:air-filter',
+                unit_of_measurement: '%',
+                state_class: 'measurement',
+                entity_category: 'diagnostic',
+            }
+            config['components']['filterdirty'] = filterDirty
             const filterChanged = {
                 platform: 'sensor',
                 unique_id: '$deviceid-filterchangeddate',

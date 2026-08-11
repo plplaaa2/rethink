@@ -86,6 +86,7 @@ describe(MODEL_ID, () => {
         enableMockTimers(t)
         const { ha, thinq, dev } = makeDevice()
         thinq.resetRecorder() // discard the queryCaps from the constructor
+        dev.filterLifeTime = 720
 
         thinq.emit('data', buf(CAPS_RESPONSE_HEX))
         thinq.emit('data', buf(QUERY_RESPONSE_HEX))
@@ -117,6 +118,9 @@ describe(MODEL_ID, () => {
         assert.equal(components.energytotal.unit_of_measurement, 'kWh')
         assert.equal(components.energytotal.state_class, 'total_increasing')
         assert.ok(components.odusuctiontemp, 'ODU suction temperature sensor')
+        assert.ok(components.filterdirty, 'derived filter dirty sensor')
+        assert.equal(components.filterdirty.unit_of_measurement, '%')
+        assert.equal(components.filterdirty.state_class, 'measurement')
 
         // Capability bits from the captured caps response unlocked these optional components.
         assert.ok(components.jet, 'jet (because 0x2CD bits 0x1|0x2)')
@@ -196,6 +200,26 @@ describe(MODEL_ID, () => {
         // energysave is mode-dependent (cool only). With mode=heat its read_callback returns false,
         // so it must NOT have been published.
         assert.ok(!ha.getProperty(DEVICE_ID, 'energysave', 'state'), 'energysave suppressed in heat mode')
+
+        dev.drop()
+    })
+
+    test('filter dirty percentage is derived, rounded, and capped', (t) => {
+        enableMockTimers(t)
+        const { ha, thinq, dev } = makeDevice()
+
+        dev.filterLifeTime = 720
+        thinq.emit('data', buf(CAPS_RESPONSE_HEX))
+        thinq.emit('data', buf(QUERY_RESPONSE_HEX))
+        tickMockTimers(t, 6000)
+
+        dev.filterUsedTime = 12
+        dev.publishFilterData()
+        assert.equal(ha.getProperty(DEVICE_ID, 'filterdirty', 'state'), 1.7)
+
+        dev.filterUsedTime = 800
+        dev.publishFilterData()
+        assert.equal(ha.getProperty(DEVICE_ID, 'filterdirty', 'state'), 100)
 
         dev.drop()
     })
