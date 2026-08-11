@@ -37,6 +37,10 @@ const QUERY_RESPONSE_HEX =
     'CC90438B40BF600155BFE00271BFA00155C0200271BE509FBE90A01B01BED050C300C340C0C0C380' +
     '3E6B'
 
+// Real state response from an IDU that reports raw 0/1 sentinels for unsupported pipe sensors.
+const QUERY_RESPONSE_UNSUPPORTED_PIPE_TEMPS_HEX =
+    '000004000000870204F77D7E407DC17E887F50367F9036C85064C880C8C08340838083C0868086C0870087C08F80894088408A10108A50598A8A8CA003B28CD027ACE00111CA00D540D580C900CAD07ECB10A2CB40CB9012CBCACC103CCC5067CC909C8B40BF600182BFC0BFA001F4C000BE41BE811B01BED064C340C0C0C380CCC0CD00CD40900017D4'
+
 // Bytes that the device sends in response to specific HA setProperty calls.
 const WRITE_MODE_FAN_ONLY_HEX = '01010400000065020101067E427E837F80B452'
 const WRITE_MODE_HEAT_HEX = '01010400000065020101077E447E837F902AF936'
@@ -112,6 +116,24 @@ describe(MODEL_ID, () => {
             'on',
             'off',
         ])
+
+        dev.drop()
+    })
+
+    test('unsupported pipe temperature sentinels are omitted from discovery', (t) => {
+        enableMockTimers(t)
+        const { ha, thinq, dev } = makeDevice()
+        thinq.resetRecorder()
+
+        thinq.emit('data', buf(CAPS_RESPONSE_HEX))
+        thinq.emit('data', buf(QUERY_RESPONSE_UNSUPPORTED_PIPE_TEMPS_HEX))
+        tickMockTimers(t, 6000)
+
+        const components = ha.devices[DEVICE_ID].config!.components as Record<string, Record<string, unknown>>
+        assert.ok(!components.pipeintemp, 'unsupported liquid pipe temperature omitted')
+        assert.ok(!components.pipeouttemp, 'unsupported gas pipe temperature omitted')
+        assert.ok(components.oduhextemp, 'valid ODU heat exchanger temperature retained')
+        assert.ok(components.oduairtemp, 'valid ODU air temperature retained')
 
         dev.drop()
     })

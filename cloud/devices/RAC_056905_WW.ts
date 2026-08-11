@@ -496,24 +496,15 @@ export default class Device extends TLVDevice {
          * at their own pace, sometimes in clusters with other attributes.
          * Deluxe IDUs send notifications noticeably more often than Standard2 IDUs.
          *
-         * Pipe temps are sometimes reported as 0 (-100 C) for a moment after a shutdown.
-         * Make sure to filter out such updates.
+         * Sensor compatibility filter: raw pipe values 0 and 1 are unavailable sentinels
+         * on unsupported IDUs, not real temperatures. Related test:
+         * tests/cloud/devices/RAC_056905_WW.test.ts.
          */
-        this.addOptionalSensorTempField(
-            config,
-            0x2f9,
-            'pipeintemp',
-            'Pipe liquid temperature',
-            'mdi:pipe',
-            (raw) => racPipeTemp[255 - raw],
+        this.addOptionalSensorTempField(config, 0x2f9, 'pipeintemp', 'Pipe liquid temperature', 'mdi:pipe', (raw) =>
+            raw <= 1 ? undefined : racPipeTemp[255 - raw],
         )
-        this.addOptionalSensorTempField(
-            config,
-            0x2fa,
-            'pipeouttemp',
-            'Pipe gas temperature',
-            'mdi:pipe',
-            (raw) => racPipeTemp[255 - raw],
+        this.addOptionalSensorTempField(config, 0x2fa, 'pipeouttemp', 'Pipe gas temperature', 'mdi:pipe', (raw) =>
+            raw <= 1 ? undefined : racPipeTemp[255 - raw],
         )
 
         this.addOptionalSensorTempField(

@@ -6,3 +6,4 @@
 {"version":"dev-0.1.5","date":"2026-08-10","changes":["Changed the add-on source build reference from the mutable dev branch to the released master branch","Updated branch references in the add-on documentation"]}
 {"version":"dev-0.1.6","date":"2026-08-10","changes":["Fixed exec /run.sh not found failures caused by CRLF shebangs","Added Git attributes for LF-only runtime and build files","Normalized the startup script during the Docker build"]}
 {"version":"dev-0.1.7","date":"2026-08-10","changes":["Changed the default Rethink hostname from rethink.lan to rethink.home.arpa","Updated add-on and standalone documentation to use the new DNS default"]}
+{"version":"dev-0.1.8","date":"2026-08-11","changes":["Stopped publishing RAC liquid and gas pipe temperature sensors when the device reports unsupported raw sentinel values 0 or 1","Added regression coverage that preserves valid outdoor-unit temperature sensors"]}
