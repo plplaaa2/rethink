@@ -45,6 +45,10 @@ const QUERY_RESPONSE_UNSUPPORTED_PIPE_TEMPS_HEX =
 const WRITE_MODE_FAN_ONLY_HEX = '01010400000065020101067E427E837F80B452'
 const WRITE_MODE_HEAT_HEX = '01010400000065020101077E447E837F902AF936'
 const WRITE_POWER_OFF_HEX = '01010400000065020101027DC00576'
+const WRITE_INDIRECT_WIND_ON_HEX = '0101040000006502010102C8416527'
+const WRITE_INDIRECT_WIND_OFF_HEX = '0101040000006502010102C84615C0'
+const STATE_INDIRECT_WIND_ON_HEX = '0000040000008702040106C841BF60031CAFC7'
+const STATE_INDIRECT_WIND_OFF_HEX = '0000040000008702046A09C846CC5056BF6001C78E4D'
 
 function makeDevice() {
     const ha = new MockHAConnection()
@@ -93,6 +97,9 @@ describe(MODEL_ID, () => {
         assert.ok(components.climate, 'climate component')
         assert.equal(components.climate.platform, 'climate')
         assert.equal(components.climate.temp_step, 1, 'target temperature changes in whole degrees')
+        assert.ok(components.indirectwind, 'indirect wind switch')
+        assert.equal(components.indirectwind.platform, 'switch')
+        assert.equal(components.indirectwind.optimistic, undefined, 'switch uses reported device state')
 
         // Capability bits from the captured caps response unlocked these optional components.
         assert.ok(components.jet, 'jet (because 0x2CD bits 0x1|0x2)')
@@ -187,6 +194,25 @@ describe(MODEL_ID, () => {
 
         assert.equal(thinq.outbox.length, 1)
         assert.equal(dev.raw_clip_state[0x1fe], 42, '20.5 C command rounded to 21 C protocol value')
+
+        dev.drop()
+    })
+
+    test('indirect wind switch maps ON/OFF commands and reported states', (t) => {
+        const { thinq, dev, ha } = buildReadyDevice(t)
+
+        ha.setProperty(DEVICE_ID, 'indirectwind', 'command', 'ON')
+        assert.equal(hex(thinq.outbox[0]), WRITE_INDIRECT_WIND_ON_HEX)
+
+        thinq.emit('data', buf(STATE_INDIRECT_WIND_ON_HEX))
+        assert.equal(ha.getProperty(DEVICE_ID, 'indirectwind', 'state'), 'ON')
+
+        thinq.resetRecorder()
+        ha.setProperty(DEVICE_ID, 'indirectwind', 'command', 'OFF')
+        assert.equal(hex(thinq.outbox[0]), WRITE_INDIRECT_WIND_OFF_HEX)
+
+        thinq.emit('data', buf(STATE_INDIRECT_WIND_OFF_HEX))
+        assert.equal(ha.getProperty(DEVICE_ID, 'indirectwind', 'state'), 'OFF')
 
         dev.drop()
     })

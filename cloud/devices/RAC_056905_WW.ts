@@ -396,6 +396,26 @@ export default class Device extends TLVDevice {
         })
 
         if (this.raw_clip_state[0x2cd] & 4) {
+            /* Indirect wind shares the vertical-vane tag with the climate swing control.
+             * Keep one read owner for 0x321 and publish the switch state from its callback.
+             * Related test: tests/cloud/devices/RAC_056905_WW.test.ts. */
+            const indirectWind = {
+                platform: 'switch',
+                unique_id: '$deviceid-indirectwind',
+                name: 'Indirect wind',
+                icon: 'mdi:weather-windy',
+                entity_category: 'config',
+                state_topic: '$this/indirectwind',
+                command_topic: '$this/indirectwind/set',
+            }
+            config['components']['indirectwind'] = indirectWind
+            this.fields_by_ha['indirectwind'] = {
+                id: 0x321,
+                name: '',
+                comp: 'indirectwind',
+                write_xform: (val) => (val === 'ON' ? 1 : 6),
+            }
+
             config['components']['climate']['swing_modes'] = ['1', '2', '3', '4', '5', '6', 'on', 'off']
             this.addField(config, {
                 id: 0x321,
@@ -405,6 +425,10 @@ export default class Device extends TLVDevice {
                     const modes2ha = ['off', '1', '2', '3', '4', '5', '6']
                     modes2ha[100] = 'on'
                     return modes2ha[raw]
+                },
+                read_callback: () => {
+                    this.HA.publishProperty(this.id, 'indirectwind', this.raw_clip_state[0x321] === 1 ? 'ON' : 'OFF')
+                    return true
                 },
                 write_xform: (val) => {
                     const modes2clip: Record<string, number> = {
