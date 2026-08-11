@@ -396,8 +396,10 @@ export default class Device extends TLVDevice {
         })
 
         if (this.raw_clip_state[0x2cd] & 4) {
-            /* Indirect wind shares the vertical-vane tag with the climate swing control.
-             * Keep one read owner for 0x321 and publish the switch state from its callback.
+            /* Vertical swing, fixed vane angle, and indirect wind share tag 0x321.
+             * Keep one read owner and derive all three HA states from its callback.
+             * Related files: tests/cloud/devices/RAC_056905_WW.test.ts,
+             * docs/rac-tlv-sensor-investigation.md.
              * Related test: tests/cloud/devices/RAC_056905_WW.test.ts. */
             const indirectWind = {
                 platform: 'switch',
@@ -416,31 +418,41 @@ export default class Device extends TLVDevice {
                 write_xform: (val) => (val === 'ON' ? 1 : 6),
             }
 
-            config['components']['climate']['swing_modes'] = ['1', '2', '3', '4', '5', '6', 'on', 'off']
+            const verticalVaneAngle = {
+                platform: 'select',
+                unique_id: '$deviceid-verticalvaneangle',
+                name: 'Vertical vane angle',
+                icon: 'mdi:angle-acute',
+                entity_category: 'config',
+                state_topic: '$this/verticalvaneangle',
+                command_topic: '$this/verticalvaneangle/set',
+                options: ['1', '2', '3', '4', '5', '6'],
+            }
+            config['components']['verticalvaneangle'] = verticalVaneAngle
+            this.fields_by_ha['verticalvaneangle'] = {
+                id: 0x321,
+                name: '',
+                comp: 'verticalvaneangle',
+                write_xform: (val) => {
+                    const angle = Number(val)
+                    return Number.isInteger(angle) && angle >= 1 && angle <= 6 ? angle : null
+                },
+            }
+
+            config['components']['climate']['swing_modes'] = ['on', 'off']
             this.addField(config, {
                 id: 0x321,
                 name: 'swing_mode',
                 comp: 'climate',
-                read_xform: (raw) => {
-                    const modes2ha = ['off', '1', '2', '3', '4', '5', '6']
-                    modes2ha[100] = 'on'
-                    return modes2ha[raw]
-                },
+                read_xform: (raw) => (raw === 100 ? 'on' : 'off'),
                 read_callback: () => {
-                    this.HA.publishProperty(this.id, 'indirectwind', this.raw_clip_state[0x321] === 1 ? 'ON' : 'OFF')
+                    const raw = this.raw_clip_state[0x321]
+                    this.HA.publishProperty(this.id, 'indirectwind', raw === 1 ? 'ON' : 'OFF')
+                    if (raw >= 1 && raw <= 6) this.HA.publishProperty(this.id, 'verticalvaneangle', raw)
                     return true
                 },
                 write_xform: (val) => {
-                    const modes2clip: Record<string, number> = {
-                        off: 0,
-                        '1': 1,
-                        '2': 2,
-                        '3': 3,
-                        '4': 4,
-                        '5': 5,
-                        '6': 6,
-                        on: 100,
-                    }
+                    const modes2clip: Record<string, number> = { off: 0, on: 100 }
                     return modes2clip[val]
                 },
             })
@@ -487,6 +499,28 @@ export default class Device extends TLVDevice {
         }
 
         this.addOptionalSensorField(config, 0x221, 'error', 'Error code', 'mdi:alert')
+        /* Confirmed RAC telemetry from live cooling, fan, and dry-mode captures.
+         * Related files: docs/rac-tlv-sensor-investigation.md,
+         * tests/cloud/devices/RAC_056905_WW.test.ts. */
+        this.addOptionalSensorField(config, 0x228, 'compressorfrequency', 'Compressor frequency', 'mdi:sine-wave', {
+            state_class: 'measurement',
+            unit_of_measurement: 'Hz',
+            suggested_display_precision: 0,
+        })
+        this.addOptionalSensorField(
+            config,
+            0x232,
+            'energyaccumulated',
+            'Energy accumulated',
+            'mdi:lightning-bolt',
+            {
+                device_class: 'energy',
+                state_class: 'total_increasing',
+                unit_of_measurement: 'kWh',
+                suggested_display_precision: 3,
+            },
+            (raw) => raw / 1000,
+        )
         this.addOptionalSensorField(
             config,
             0x32e,
@@ -532,6 +566,14 @@ export default class Device extends TLVDevice {
             raw <= 1 ? undefined : racPipeTemp[255 - raw],
         )
 
+        this.addOptionalSensorTempField(
+            config,
+            0x32b,
+            'odusuctiontemp',
+            'ODU suction temperature',
+            'mdi:thermometer-chevron-down',
+            (raw) => (raw <= 1 ? undefined : racPipeTemp[255 - raw]),
+        )
         this.addOptionalSensorTempField(
             config,
             [0x7a, 0x32c],

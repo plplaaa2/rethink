@@ -104,6 +104,15 @@ describe(MODEL_ID, () => {
         assert.ok(components.indirectwind, 'indirect wind switch')
         assert.equal(components.indirectwind.platform, 'switch')
         assert.equal(components.indirectwind.optimistic, undefined, 'switch uses reported device state')
+        assert.ok(components.verticalvaneangle, 'vertical vane angle select')
+        assert.equal(components.verticalvaneangle.platform, 'select')
+        assert.deepEqual(components.verticalvaneangle.options, ['1', '2', '3', '4', '5', '6'])
+        assert.ok(components.compressorfrequency, 'actual compressor frequency sensor')
+        assert.equal(components.compressorfrequency.unit_of_measurement, 'Hz')
+        assert.ok(components.energyaccumulated, 'accumulated energy sensor')
+        assert.equal(components.energyaccumulated.unit_of_measurement, 'kWh')
+        assert.equal(components.energyaccumulated.state_class, 'total_increasing')
+        assert.ok(components.odusuctiontemp, 'ODU suction temperature sensor')
 
         // Capability bits from the captured caps response unlocked these optional components.
         assert.ok(components.jet, 'jet (because 0x2CD bits 0x1|0x2)')
@@ -118,7 +127,7 @@ describe(MODEL_ID, () => {
         assert.ok(!components.airclean, 'airclean off (0x2CC bit 0x1 unset)')
 
         // Swing modes registered because 0x2CD has both 0x4 and 0x8.
-        assert.deepEqual(components.climate.swing_modes, ['1', '2', '3', '4', '5', '6', 'on', 'off'])
+        assert.deepEqual(components.climate.swing_modes, ['on', 'off'])
         assert.deepEqual(components.climate.swing_horizontal_modes, [
             '1',
             '2',
@@ -172,6 +181,13 @@ describe(MODEL_ID, () => {
         assert.equal(ha.getProperty(DEVICE_ID, 'stoptimer', 'state'), 0) // 0x21B=0
         assert.equal(ha.getProperty(DEVICE_ID, 'jet', 'state'), 'OFF')
 
+        dev.processKeyValue(0x228, 47)
+        dev.processKeyValue(0x232, 691)
+        dev.processKeyValue(0x32b, 100)
+        assert.equal(ha.getProperty(DEVICE_ID, 'compressorfrequency', 'state'), 47)
+        assert.equal(ha.getProperty(DEVICE_ID, 'energyaccumulated', 'state'), 0.691)
+        assert.equal(ha.getProperty(DEVICE_ID, 'odusuctiontemp', 'state'), 11)
+
         // energysave is mode-dependent (cool only). With mode=heat its read_callback returns false,
         // so it must NOT have been published.
         assert.ok(!ha.getProperty(DEVICE_ID, 'energysave', 'state'), 'energysave suppressed in heat mode')
@@ -212,6 +228,8 @@ describe(MODEL_ID, () => {
 
         thinq.emit('data', buf(STATE_INDIRECT_WIND_ON_HEX))
         assert.equal(ha.getProperty(DEVICE_ID, 'indirectwind', 'state'), 'ON')
+        assert.equal(ha.getProperty(DEVICE_ID, 'climate', 'swing_mode_state'), 'off')
+        assert.equal(ha.getProperty(DEVICE_ID, 'verticalvaneangle', 'state'), 1)
 
         thinq.resetRecorder()
         ha.setProperty(DEVICE_ID, 'indirectwind', 'command', 'OFF')
@@ -219,6 +237,31 @@ describe(MODEL_ID, () => {
 
         thinq.emit('data', buf(STATE_INDIRECT_WIND_OFF_HEX))
         assert.equal(ha.getProperty(DEVICE_ID, 'indirectwind', 'state'), 'OFF')
+        assert.equal(ha.getProperty(DEVICE_ID, 'climate', 'swing_mode_state'), 'off')
+        assert.equal(ha.getProperty(DEVICE_ID, 'verticalvaneangle', 'state'), 6)
+
+        dev.drop()
+    })
+
+    test('vertical swing exposes on/off while fixed vane angles use a separate select', (t) => {
+        const { thinq, dev, ha } = buildReadyDevice(t)
+
+        ha.setProperty(DEVICE_ID, 'verticalvaneangle', 'command', '3')
+        assert.equal(dev.raw_clip_state[0x321], 3)
+        assert.equal(thinq.outbox.length, 1)
+
+        dev.processKeyValue(0x321, 3)
+        assert.equal(ha.getProperty(DEVICE_ID, 'verticalvaneangle', 'state'), 3)
+        assert.equal(ha.getProperty(DEVICE_ID, 'climate', 'swing_mode_state'), 'off')
+
+        thinq.resetRecorder()
+        ha.setProperty(DEVICE_ID, 'climate', 'swing_mode_command', 'on')
+        assert.equal(dev.raw_clip_state[0x321], 100)
+        assert.equal(thinq.outbox.length, 1)
+
+        dev.processKeyValue(0x321, 100)
+        assert.equal(ha.getProperty(DEVICE_ID, 'climate', 'swing_mode_state'), 'on')
+        assert.equal(ha.getProperty(DEVICE_ID, 'verticalvaneangle', 'state'), 3, 'last fixed angle retained')
 
         dev.drop()
     })
