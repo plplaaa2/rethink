@@ -68,7 +68,8 @@ jq -n \
             discovery_prefix: $discovery_prefix,
             rethink_prefix: $rethink_prefix,
             mqtt_user: $mqtt_username,
-            mqtt_pass: $mqtt_password
+            mqtt_pass: $mqtt_password,
+            storage_path: "ha-state"
         },
         ca_key_file: "ca.key",
         ca_cert_file: "ca.cert",

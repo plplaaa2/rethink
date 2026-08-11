@@ -10,6 +10,10 @@ import HADevice from './base'
 
 type PowerModeChangeHook = () => void
 type CheckMode = (arg: number) => boolean
+type RACEnergyPersistentState = {
+    totalWh: number
+    lastOperationWh: number
+}
 export default class Device extends TLVDevice {
     meta: Metadata
     initialValuesReceived: boolean = false
@@ -28,10 +32,25 @@ export default class Device extends TLVDevice {
     filterInitialQueryTimeout: ReturnType<typeof setTimeout> | undefined
     filterQueryTimer: ReturnType<typeof setInterval> | undefined
     filterDoReset: boolean = false
+    totalEnergyWh: number = 0
+    lastOperationEnergyWh: number | undefined
+    energyPersistTimer: ReturnType<typeof setTimeout> | undefined
 
     constructor(HA: Connection, thinq: Thinq2Device, meta: Metadata) {
         super(HA, thinq)
         this.meta = meta
+
+        const persisted = HA.getPersistentDeviceState(this.id)['racEnergy'] as Partial<RACEnergyPersistentState>
+        if (
+            persisted != null &&
+            Number.isFinite(persisted.totalWh) &&
+            Number.isFinite(persisted.lastOperationWh) &&
+            persisted.totalWh! >= 0 &&
+            persisted.lastOperationWh! >= 0
+        ) {
+            this.totalEnergyWh = persisted.totalWh!
+            this.lastOperationEnergyWh = persisted.lastOperationWh!
+        }
     }
 
     drop() {
@@ -55,7 +74,50 @@ export default class Device extends TLVDevice {
             this.filterQueryTimer = undefined
         }
 
+        if (this.energyPersistTimer != undefined) {
+            clearTimeout(this.energyPersistTimer)
+            this.energyPersistTimer = undefined
+        }
+        this.persistEnergyState()
+
         super.drop()
+    }
+
+    /* Accumulate a lifetime energy total across per-operation meter resets.
+     * Related files: cloud/homeassistant.ts, rethink-addon/run.sh,
+     * tests/cloud/devices/RAC_056905_WW.test.ts. */
+    processOperationEnergy(rawWh: number) {
+        if (this.lastOperationEnergyWh == null) {
+            this.totalEnergyWh += rawWh
+        } else if (rawWh >= this.lastOperationEnergyWh) {
+            this.totalEnergyWh += rawWh - this.lastOperationEnergyWh
+        } else {
+            // A decrease starts a new appliance operation meter cycle.
+            this.totalEnergyWh += rawWh
+        }
+
+        this.lastOperationEnergyWh = rawWh
+        this.HA.publishProperty(this.id, 'energytotal', this.totalEnergyWh / 1000)
+        this.scheduleEnergyPersist()
+    }
+
+    scheduleEnergyPersist() {
+        if (this.energyPersistTimer != null) return
+        this.energyPersistTimer = setTimeout(() => {
+            this.energyPersistTimer = undefined
+            this.persistEnergyState()
+        }, 30 * 1000)
+        this.energyPersistTimer.unref?.()
+    }
+
+    persistEnergyState() {
+        if (this.lastOperationEnergyWh == null) return
+        const state = this.HA.getPersistentDeviceState(this.id)
+        state['racEnergy'] = {
+            totalWh: this.totalEnergyWh,
+            lastOperationWh: this.lastOperationEnergyWh,
+        } satisfies RACEnergyPersistentState
+        this.HA.setPersistentDeviceState(this.id, state)
     }
 
     processPrivData(cmd: number, buf9: number, data: Buffer) {
@@ -507,20 +569,44 @@ export default class Device extends TLVDevice {
             unit_of_measurement: 'Hz',
             suggested_display_precision: 0,
         })
-        this.addOptionalSensorField(
-            config,
-            0x232,
-            'energyaccumulated',
-            'Current operation energy',
-            'mdi:lightning-bolt',
-            {
+        if (this.raw_clip_state[0x232] != null) {
+            const currentOperationEnergy = {
+                platform: 'sensor',
+                unique_id: '$deviceid-energyaccumulated',
+                name: 'Current operation energy',
+                icon: 'mdi:lightning-bolt',
+                entity_category: 'diagnostic',
                 device_class: 'energy',
                 state_class: 'total_increasing',
                 unit_of_measurement: 'kWh',
                 suggested_display_precision: 3,
-            },
-            (raw) => raw / 1000,
-        )
+            }
+            const totalEnergy = {
+                platform: 'sensor',
+                unique_id: '$deviceid-energytotal',
+                name: 'Total energy',
+                icon: 'mdi:lightning-bolt-circle',
+                entity_category: 'diagnostic',
+                device_class: 'energy',
+                state_class: 'total_increasing',
+                unit_of_measurement: 'kWh',
+                suggested_display_precision: 3,
+                state_topic: '$this/energytotal',
+            }
+            config['components']['energyaccumulated'] = currentOperationEnergy
+            config['components']['energytotal'] = totalEnergy
+            this.addField(config, {
+                id: 0x232,
+                name: '',
+                comp: 'energyaccumulated',
+                writable: false,
+                read_xform: (raw) => raw / 1000,
+                read_callback: () => {
+                    this.processOperationEnergy(this.raw_clip_state[0x232])
+                    return true
+                },
+            })
+        }
         this.addOptionalSensorField(
             config,
             0x32e,

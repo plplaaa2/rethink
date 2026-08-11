@@ -28,6 +28,8 @@ const config = normalizeConfig(JSON.parse(stripJsonComments(readFileSync(configP
 
 config.ca_key_file = resolve(configDir, config.ca_key_file)
 config.ca_cert_file = resolve(configDir, config.ca_cert_file)
+config.homeassistant.storage_path = resolve(configDir, config.homeassistant.storage_path ?? 'ha-state')
+mkdirSync(config.homeassistant.storage_path, { recursive: true })
 if (config.bridge) config.bridge.storage_path = resolve(configDir, config.bridge.storage_path)
 
 if (!config.log) config.log = ['status', 'incoming', 'HTTPS']

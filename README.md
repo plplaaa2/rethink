@@ -9,7 +9,7 @@ LG ThinQ 가전을 LG 클라우드 대신 로컬 Rethink 서버에 연결하고,
 - Home Assistant 애드온으로 Rethink 서비스 실행 및 자동 시작
 - Supervisor에 등록된 MQTT 서비스 정보 자동 검색
 - MQTT 자동 검색 실패 또는 비활성화 시 서버·사용자 ID·비밀번호 수동 설정
-- 인증서, 브리지 상태 및 런타임 설정을 `/data`에 영구 보관
+- 인증서, 브리지 상태, 런타임 설정 및 소프트웨어 누적 전력량을 `/data`에 영구 보관
 - Home Assistant ingress를 통한 관리 화면 접근
 - ThinQ 1 및 ThinQ 2 로컬 엔드포인트 제공
 

@@ -9,3 +9,4 @@
 {"date":"2026-08-11","area":"rac-controls","caution":"RAC indirect wind shares tag 0x321 with vertical swing; keep a single read-field owner and publish the derived switch state without overwriting the climate field mapping."}
 {"date":"2026-08-11","area":"rac-controls","caution":"Keep RAC auto dry as a non-optimistic switch backed by tag 0x20e device reports; do not duplicate it as a binary sensor."}
 {"date":"2026-08-11","area":"addon-network","caution":"Do not publish Rethink internal MQTT port 1884 on the Home Assistant host; reserve host port 8883 for Rethink ThinQ 2 and remove any conflicting MQTT broker add-on mapping."}
+{"date":"2026-08-11","area":"rac-energy","caution":"Preserve /data/ha-state across add-on rebuilds and updates; deleting it resets the software-maintained RAC Total energy baseline."}

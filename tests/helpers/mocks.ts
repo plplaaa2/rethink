@@ -19,7 +19,16 @@ export type DeviceInfo = {
 
 export class MockHAConnection extends EventEmitter {
     devices: Record<string, DeviceInfo> = {}
+    persistentDeviceStates: Record<string, Record<string, unknown>> = {}
     isConnected = true
+
+    getPersistentDeviceState(id: string): Record<string, unknown> {
+        return structuredClone(this.persistentDeviceStates[id] ?? {})
+    }
+
+    setPersistentDeviceState(id: string, state: Record<string, unknown>) {
+        this.persistentDeviceStates[id] = structuredClone(state)
+    }
 
     publishConfig(id: string, config: DeviceDiscovery) {
         if (!this.devices[id]) this.devices[id] = { properties: {} }

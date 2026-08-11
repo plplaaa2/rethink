@@ -54,8 +54,7 @@ const WRITE_AUTO_DRY_OFF_HEX = '010104000000650201010283807D7C'
 const STATE_AUTO_DRY_ON_HEX = '000004000000870204FE0283817DA9'
 const STATE_AUTO_DRY_OFF_HEX = '0000040000008702045502838099E1'
 
-function makeDevice() {
-    const ha = new MockHAConnection()
+function makeDevice(ha = new MockHAConnection()) {
     const thinq = new MockThinq2Device(DEVICE_ID, META)
     const dev = new DUT(ha.asConnection(), thinq, META)
     ha.on('setProperty', (id: string, prop: string, value: string) => {
@@ -113,6 +112,10 @@ describe(MODEL_ID, () => {
         assert.equal(components.energyaccumulated.name, 'Current operation energy')
         assert.equal(components.energyaccumulated.unit_of_measurement, 'kWh')
         assert.equal(components.energyaccumulated.state_class, 'total_increasing')
+        assert.ok(components.energytotal, 'persistent total energy sensor')
+        assert.equal(components.energytotal.name, 'Total energy')
+        assert.equal(components.energytotal.unit_of_measurement, 'kWh')
+        assert.equal(components.energytotal.state_class, 'total_increasing')
         assert.ok(components.odusuctiontemp, 'ODU suction temperature sensor')
 
         // Capability bits from the captured caps response unlocked these optional components.
@@ -187,6 +190,7 @@ describe(MODEL_ID, () => {
         dev.processKeyValue(0x32b, 100)
         assert.equal(ha.getProperty(DEVICE_ID, 'compressorfrequency', 'state'), 47)
         assert.equal(ha.getProperty(DEVICE_ID, 'energyaccumulated', 'state'), 0.691)
+        assert.ok(Number(ha.getProperty(DEVICE_ID, 'energytotal', 'state')) >= 0.691)
         assert.equal(ha.getProperty(DEVICE_ID, 'odusuctiontemp', 'state'), 11)
 
         // energysave is mode-dependent (cool only). With mode=heat its read_callback returns false,
@@ -194,6 +198,34 @@ describe(MODEL_ID, () => {
         assert.ok(!ha.getProperty(DEVICE_ID, 'energysave', 'state'), 'energysave suppressed in heat mode')
 
         dev.drop()
+    })
+
+    test('total energy accumulates across operation resets and persists across device recreation', (t) => {
+        const { ha, dev } = buildReadyDevice(t)
+        const previousRaw = dev.raw_clip_state[0x232]
+        dev.processKeyValue(0x232, previousRaw)
+        const totalBefore = Number(ha.getProperty(DEVICE_ID, 'energytotal', 'state'))
+
+        dev.processKeyValue(0x232, previousRaw + 10)
+        assert.equal(ha.getProperty(DEVICE_ID, 'energytotal', 'state'), totalBefore + 0.01)
+
+        dev.processKeyValue(0x232, 5)
+        assert.equal(ha.getProperty(DEVICE_ID, 'energytotal', 'state'), totalBefore + 0.015)
+        const expectedTotalWh = dev.totalEnergyWh
+        dev.drop()
+
+        const stored = ha.persistentDeviceStates[DEVICE_ID]['racEnergy'] as {
+            totalWh: number
+            lastOperationWh: number
+        }
+        assert.equal(stored.totalWh, expectedTotalWh)
+        assert.equal(stored.lastOperationWh, 5)
+
+        const restoredThinq = new MockThinq2Device(DEVICE_ID, META)
+        const restored = new DUT(ha.asConnection(), restoredThinq, META)
+        assert.equal(restored.totalEnergyWh, stored.totalWh)
+        assert.equal(restored.lastOperationEnergyWh, 5)
+        restored.drop()
     })
 
     test('HA write climate-mode=fan_only emits expected bytes', (t) => {

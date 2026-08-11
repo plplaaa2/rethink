@@ -2,6 +2,9 @@ import * as mqtt from 'mqtt'
 import { TypedEmitter } from 'tiny-typed-emitter'
 import { HAConfig } from '@/util/config'
 import log from '@/util/logging'
+import { createHash } from 'node:crypto'
+import { readFileSync, renameSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 // Notes on availability topic handling:
 // 1. We want HA to be able to tell if a device is available.
@@ -65,6 +68,39 @@ export class Connection extends TypedEmitter<ConnectionEvents> {
         this.client.on('connect', this.connected.bind(this))
         this.client.on('close', this.disconnected.bind(this))
         this.client.on('message', this.received.bind(this))
+    }
+
+    /* Persist derived HA device state outside the container filesystem.
+     * Related files: rethink-cloud.ts, rethink-addon/run.sh,
+     * cloud/devices/RAC_056905_WW.ts, tests/helpers/mocks.ts. */
+    persistentDeviceStatePath(id: string) {
+        if (!this.config.storage_path) return undefined
+        const safeId = createHash('sha256').update(id).digest('hex')
+        return join(this.config.storage_path, `device_${safeId}.json`)
+    }
+
+    getPersistentDeviceState(id: string): Record<string, unknown> {
+        const path = this.persistentDeviceStatePath(id)
+        if (!path) return {}
+
+        try {
+            return JSON.parse(readFileSync(path, 'utf-8')) as Record<string, unknown>
+        } catch (err) {
+            return {}
+        }
+    }
+
+    setPersistentDeviceState(id: string, state: Record<string, unknown>) {
+        const path = this.persistentDeviceStatePath(id)
+        if (!path) return
+
+        const tmpPath = `${path}.tmp`
+        try {
+            writeFileSync(tmpPath, JSON.stringify(state), { encoding: 'utf-8', mode: 0o600 })
+            renameSync(tmpPath, path)
+        } catch (err) {
+            console.warn(`Unable to persist Home Assistant device state for ${id}: ${err}`)
+        }
     }
 
     connected() {
