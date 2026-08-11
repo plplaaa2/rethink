@@ -21,6 +21,7 @@
 |-- tests/                   # Automated tests
 |-- tools/                   # Reverse-engineering utilities
 |-- util/                    # Shared TypeScript utilities
+|-- CHANGELOG.md             # Root add-on release notes
 |-- Dockerfile               # Upstream application image
 |-- repository.yaml          # Home Assistant repository metadata
 `-- rethink-cloud.ts         # Main service entry point
