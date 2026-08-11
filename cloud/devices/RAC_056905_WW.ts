@@ -511,7 +511,7 @@ export default class Device extends TLVDevice {
             config,
             0x232,
             'energyaccumulated',
-            'Energy accumulated',
+            'Current operation energy',
             'mdi:lightning-bolt',
             {
                 device_class: 'energy',

@@ -110,6 +110,7 @@ describe(MODEL_ID, () => {
         assert.ok(components.compressorfrequency, 'actual compressor frequency sensor')
         assert.equal(components.compressorfrequency.unit_of_measurement, 'Hz')
         assert.ok(components.energyaccumulated, 'accumulated energy sensor')
+        assert.equal(components.energyaccumulated.name, 'Current operation energy')
         assert.equal(components.energyaccumulated.unit_of_measurement, 'kWh')
         assert.equal(components.energyaccumulated.state_class, 'total_increasing')
         assert.ok(components.odusuctiontemp, 'ODU suction temperature sensor')

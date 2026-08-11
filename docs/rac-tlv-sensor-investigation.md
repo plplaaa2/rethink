@@ -264,7 +264,9 @@ High와 Very high의 목표 RPM 차이는 100 rpm이고 실제 RPM 차이도 100
 2026-08-11 관측 결과 중 다음 항목을 Home Assistant 진단 엔티티로 반영했다.
 
 - `0x228`: Compressor frequency, Hz
-- `0x232`: Energy accumulated, kWh (`raw / 1000`), `total_increasing`
+- `0x232`: Current operation energy, kWh (`raw / 1000`), `total_increasing`
 - `0x32B`: ODU suction temperature, °C
 
 기존 Fan RPM 센서가 있으므로 목표 팬 RPM `0x2FB`는 별도 엔티티로 추가하지 않았다. 세로 climate 회전 모드는 `on/off`만 남기고, 고정 위치 `1~6`은 별도의 기기 설정용 Vertical vane angle 셀렉트로 분리했다. 세 기능이 공유하는 `0x321` 읽기 소유자는 하나로 유지해 회전, 각도, 간접 바람 상태를 파생 발행한다.
+
+`0x232`는 LG RAC 설명서상 운전 전원을 끌 때 초기화되는 회차 누적량일 가능성이 있어, 장기 누적으로 오해하지 않도록 dev 브랜치의 표시 이름을 `Current operation energy`로 변경했다. 고유 ID `energyaccumulated`와 MQTT 토픽은 호환성을 위해 유지한다.
