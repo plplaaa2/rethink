@@ -23,6 +23,8 @@ LG ThinQ 가전을 LG 클라우드 대신 로컬 Rethink 서버에 연결하고,
 
 MQTT 자동 검색이 활성화되어 있으면 Supervisor가 제공하는 MQTT 연결 정보를 우선 사용합니다. MQTT 서비스가 없거나 정보를 가져오지 못하면 수동으로 입력한 `mqtt_server`, `mqtt_username`, `mqtt_password` 값으로 전환합니다.
 
+Rethink 애드온은 MQTT Broker 애드온과의 호스트 포트 충돌을 피하기 위해 내부 포트 `1884`를 공개하지 않습니다. ThinQ 2 기기 연결에는 Rethink의 `8883` 포트가 필요하므로 MQTT Broker 애드온이 호스트 포트 `8883`을 사용 중이면 Broker 애드온 설정에서 해당 포트 공개를 제거해야 합니다. MQTT Broker의 일반 연결 포트 `1883`은 그대로 사용할 수 있습니다.
+
 필수 포트와 상세 옵션은 [애드온 사용 설명서](rethink-addon/DOCS.md)를 참고하십시오. 가전 및 관리 포트를 인터넷에 직접 공개하지 마십시오.
 
 ## 원본 Rethink 프로젝트

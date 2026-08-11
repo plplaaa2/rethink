@@ -14,7 +14,9 @@ When automatic discovery is enabled and an MQTT service is available, the discov
 
 ## Network requirement
 
-The appliance must resolve the configured hostname to the Home Assistant host. Configure the local DNS server or router accordingly. Ports 443, 8883, 1884, 46030, and 47878 must be reachable by the appliance.
+The appliance must resolve the configured hostname (default: `rethink.home.arpa`) to the Home Assistant host. Configure the local DNS server or router accordingly. Ports 443, 8883, 46030, and 47878 must be reachable by the appliance.
+
+The add-on does not publish its internal unencrypted MQTT port `1884` to the Home Assistant host because it can conflict with an installed MQTT broker add-on. Port `8883` is required for ThinQ 2 appliances, so if an MQTT broker add-on publishes host port `8883`, remove that port mapping from the broker add-on before starting Rethink. This does not affect Rethink's broker connection configured by `mqtt_server`, which normally uses port `1883`.
 
 The management interface is available from the add-on page through **Open Web UI**.
 

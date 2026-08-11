@@ -21,14 +21,12 @@ webui: http://[HOST]:[PORT:44401]
 ports:
     443/tcp: 443
     8883/tcp: 8883
-    1884/tcp: 1884
     46030/tcp: 46030
     47878/tcp: 47878
     44401/tcp: 44401
 ports_description:
     443/tcp: ThinQ 2 HTTPS endpoint
     8883/tcp: ThinQ 2 secure MQTT endpoint
-    1884/tcp: Local unencrypted MQTT endpoint
     46030/tcp: ThinQ 1 HTTPS endpoint
     47878/tcp: ThinQ 1 device endpoint
     44401/tcp: Management web interface

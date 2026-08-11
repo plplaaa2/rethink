@@ -23,7 +23,6 @@ configuration:
 network:
     443/tcp: ThinQ 2 HTTPS 엔드포인트
     8883/tcp: ThinQ 2 보안 MQTT 엔드포인트
-    1884/tcp: 로컬 비암호화 MQTT 엔드포인트
     46030/tcp: ThinQ 1 HTTPS 엔드포인트
     47878/tcp: ThinQ 1 기기 엔드포인트
     44401/tcp: 관리 웹 인터페이스
