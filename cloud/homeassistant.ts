@@ -70,6 +70,31 @@ export class Connection extends TypedEmitter<ConnectionEvents> {
         this.client.on('message', this.received.bind(this))
     }
 
+    /* Reads non-secret Home Assistant configuration and entity state through the
+     * Supervisor Core API proxy. Related file: cloud/devices/2RES2VE300UA2.ts. */
+    private async getCoreApi(path: string): Promise<Record<string, unknown> | undefined> {
+        const token = process.env.SUPERVISOR_TOKEN
+        if (!token) return
+        try {
+            const response = await fetch(`http://supervisor/core/api/${path}`, {
+                headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                signal: AbortSignal.timeout(10_000),
+            })
+            if (!response.ok) return
+            return (await response.json()) as Record<string, unknown>
+        } catch {
+            return
+        }
+    }
+
+    getHomeAssistantConfig() {
+        return this.getCoreApi('config')
+    }
+
+    getHomeAssistantState(entityId: string) {
+        return this.getCoreApi(`states/${encodeURIComponent(entityId)}`)
+    }
+
     /* Persist derived HA device state outside the container filesystem.
      * Related files: rethink-cloud.ts, rethink-addon/run.sh,
      * cloud/devices/RAC_056905_WW.ts, tests/helpers/mocks.ts. */

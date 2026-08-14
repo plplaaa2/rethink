@@ -2,6 +2,8 @@
 
 LG ThinQ 가전을 로컬 Rethink 서버에 연결하고 MQTT Discovery를 통해 Home Assistant 기기로 등록합니다.
 
+`2RES2VE300UA2` 냉장고의 야간 눈부심 방지 모드는 기기 설정에서 `비활성`, `일출/일몰`, `사용자` 중 선택할 수 있습니다. 일출/일몰 모드는 Home Assistant의 `sun.sun`이 제공하는 다음 일몰·일출 UTC 시각을 사용합니다. 사용자 모드는 같은 기기 설정에 표시되는 시작·종료 시간을 사용하며 기본값은 21:00부터 다음 날 06:00까지입니다. 입력한 로컬 시간은 Home Assistant 시간대를 기준으로 UTC 변환되고 애드온 재시작 후에도 유지됩니다. 밝기는 `0%`, `10%`, `30%`, `50%`, `80%`, `100%` 셀렉터로 설정하며 기본값은 30%입니다. Home Assistant Core API 또는 `sun.sun`을 사용할 수 없으면 사용자 모드로 안전하게 대체합니다.
+
 ## 설정
 
 - `hostname`: Home Assistant 호스트를 가리키는 로컬 DNS 이름입니다. 기본값은 `rethink.home.arpa`입니다.

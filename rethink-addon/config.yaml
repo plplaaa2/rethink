@@ -1,5 +1,5 @@
 name: Rethink
-version: '0.1.3'
+version: '0.1.4'
 slug: rethink
 description: Local LG ThinQ cloud replacement with Home Assistant MQTT discovery
 url: https://github.com/plplaaa2/rethink
@@ -13,6 +13,7 @@ arch:
     - armv7
 ingress: true
 ingress_port: 44401
+homeassistant_api: true
 panel_icon: mdi:cloud-off-outline
 panel_title: Rethink
 services:

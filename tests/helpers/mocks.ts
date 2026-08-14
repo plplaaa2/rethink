@@ -23,6 +23,8 @@ export class MockHAConnection extends EventEmitter {
     // Related file: tests/cloud/devices/2RES2VE300UA2.test.ts.
     publishedConfigs: DeviceDiscovery[] = []
     persistentDeviceStates: Record<string, Record<string, unknown>> = {}
+    homeAssistantConfig: Record<string, unknown> = { time_zone: 'Asia/Seoul' }
+    homeAssistantStates: Record<string, Record<string, unknown>> = {}
     isConnected = true
 
     getPersistentDeviceState(id: string): Record<string, unknown> {
@@ -31,6 +33,15 @@ export class MockHAConnection extends EventEmitter {
 
     setPersistentDeviceState(id: string, state: Record<string, unknown>) {
         this.persistentDeviceStates[id] = structuredClone(state)
+    }
+
+    async getHomeAssistantConfig() {
+        return structuredClone(this.homeAssistantConfig)
+    }
+
+    async getHomeAssistantState(entityId: string) {
+        const state = this.homeAssistantStates[entityId]
+        return state ? structuredClone(state) : undefined
     }
 
     publishConfig(id: string, config: DeviceDiscovery) {

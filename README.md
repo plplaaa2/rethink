@@ -11,9 +11,12 @@ LG ThinQ 가전을 LG 클라우드 대신 로컬 Rethink 서버에 연결하고,
 - MQTT 자동 검색 실패 또는 비활성화 시 서버·사용자 ID·비밀번호 수동 설정
 - 인증서, 브리지 상태, 런타임 설정 및 소프트웨어 누적 전력량을 `/data`에 영구 보관
 - Home Assistant ingress를 통한 관리 화면 접근
+- Home Assistant 위치·시간대와 `sun.sun`을 사용하는 `2RES2VE300UA2` 야간 눈부심 방지 모드 설정
 - ThinQ 1 및 ThinQ 2 로컬 엔드포인트 제공
 
 ## 설치 및 설정
+
+> **주의:** `2RES2VE300UA2` 야간 시작·종료 시간은 MQTT `time` 엔티티를 사용하므로 Home Assistant 2026.5 이상이 필요합니다. 일출/일몰 모드는 Home Assistant Core API와 `sun.sun`을 사용하며, 조회할 수 없으면 사용자 모드로 대체됩니다. 사용자 입력 시간은 Home Assistant 시간대의 로컬 시간으로 저장한 뒤 냉장고 프로토콜에 맞춰 UTC로 변환됩니다. 밝기 셀렉터는 `0%`, `10%`, `30%`, `50%`, `80%`, `100%`만 전송합니다.
 
 1. Home Assistant 애드온 스토어에 `https://github.com/plplaaa2/rethink` 저장소를 추가합니다.
 2. **Rethink** 애드온을 설치합니다.
