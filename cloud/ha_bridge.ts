@@ -1,3 +1,5 @@
+/* Registers Home Assistant handlers for supported ThinQ device models.
+ * Related files: cloud/devices/2RES2VE300UA2.ts, tests/cloud/devices/2RES2VE300UA2.test.ts. */
 import POT_056905_WW from './devices/POT_056905_WW'
 import WTDN3 from './devices/WTDN3'
 import RAC_056905_WW from './devices/RAC_056905_WW'
@@ -18,6 +20,7 @@ import RV13U6AM8W_D_US_WIFI from './devices/RV13U6AM8W_D_US_WIFI'
 import F3L2CYU__ from './devices/F3L2CYU__'
 import RV13B6BSD_D_US_WIFI from './devices/RV13B6BSD_D_US_WIFI'
 import WTL_FXU_BDV_NA_01 from './devices/WTL_FXU_BDV_NA_01'
+import Dev_2RES2VE300UA2 from './devices/2RES2VE300UA2'
 import { Device as T1Device } from './thinq1/device'
 import { Device as T2Device } from './thinq2/device'
 import { type Connection } from './homeassistant'
@@ -42,6 +45,7 @@ const t2deviceTypes: Record<string, T2Factory> = {
     ['2RES1VE61NFA2']: Dev_2RES1VE61NFA2,
     ['2REB1GLVB1__2']: Dev_2REB1GLVB1__2,
     ['2RES1VE600FWC']: Dev_2RES1VE600FWC,
+    ['2RES2VE300UA2']: Dev_2RES2VE300UA2, // Korean refrigerator
     ['Y_V8_Y___W.B32QEUK']: Y_V8_Y___W_B32QEUK,
     ['F_V7_Y___W.B_2QEUK']: F_V8_Y___W_B_2QEUK, // NOTE: we reuse F_V8_Y___W_B_2QEUK as the models appear to be compatible
     ['F_V8_Y___W.B_2QEUK']: F_V8_Y___W_B_2QEUK,

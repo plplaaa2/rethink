@@ -5,6 +5,7 @@
 |-- .github/workflows/       # CI and container publishing
 |-- bridge/                  # Optional LG cloud bridge
 |-- cloud/                   # ThinQ endpoints and MQTT discovery
+|   `-- devices/2RES2VE300UA2.ts # LG Korean refrigerator protocol handler
 |-- docs/                    # Reverse-engineering investigation notes
 |   `-- rac-tlv-sensor-investigation.md # RAC TLV sensor observations
 |-- html/                    # Management interface assets
@@ -19,6 +20,7 @@
 |   |-- DOCS.md              # User documentation
 |   `-- CHANGELOG.md         # Add-on release notes
 |-- tests/                   # Automated tests
+|   `-- cloud/devices/2RES2VE300UA2.test.ts # Refrigerator protocol regression tests
 |-- tools/                   # Reverse-engineering utilities
 |-- util/                    # Shared TypeScript utilities
 |-- CHANGELOG.md             # Root add-on release notes

@@ -1,3 +1,5 @@
+/* Provides shared Home Assistant discovery publication and legacy component cleanup.
+ * Related files: cloud/devices/2RES2VE300UA2.ts, tests/cloud/devices/2RES2VE300UA2.test.ts. */
 import { type Metadata } from '../thinq'
 import type { Connection, DeviceDiscovery } from '../homeassistant'
 
@@ -28,8 +30,14 @@ export default class HADevice {
         readonly id: string,
     ) {}
 
-    setConfig(config: DeviceDiscovery) {
+    setConfig(config: DeviceDiscovery, removedComponents?: Record<string, { platform: string }>) {
         this.config = config
+        if (removedComponents) {
+            this.HA.publishConfig(this.id, {
+                ...config,
+                components: { ...config.components, ...removedComponents } as DeviceDiscovery['components'],
+            })
+        }
         this.publishConfig()
     }
 

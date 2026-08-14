@@ -19,6 +19,9 @@ export type DeviceInfo = {
 
 export class MockHAConnection extends EventEmitter {
     devices: Record<string, DeviceInfo> = {}
+    // Records discovery publications for tests that verify legacy entity removal.
+    // Related file: tests/cloud/devices/2RES2VE300UA2.test.ts.
+    publishedConfigs: DeviceDiscovery[] = []
     persistentDeviceStates: Record<string, Record<string, unknown>> = {}
     isConnected = true
 
@@ -31,6 +34,7 @@ export class MockHAConnection extends EventEmitter {
     }
 
     publishConfig(id: string, config: DeviceDiscovery) {
+        this.publishedConfigs.push(config)
         if (!this.devices[id]) this.devices[id] = { properties: {} }
         this.devices[id].config = config
     }
