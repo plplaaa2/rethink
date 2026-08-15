@@ -23,7 +23,6 @@ export default class Device extends TLVDevice {
     modePrev?: string
     airClean: boolean = false
     jetMode: boolean = false
-    energySave: boolean = false
     tlvBlacklistDisableTimer: ReturnType<typeof setTimeout> | undefined
     increasedQueryIntervalTimeout: ReturnType<typeof setTimeout> | undefined
     filterUsedTime: number = 0
@@ -738,16 +737,10 @@ export default class Device extends TLVDevice {
         }
 
         if (this.raw_clip_state[0x2cc] & 2) {
-            // Can be enabled only when running in the cooling mode
-            this.addModeDependentConfigSwitchField(
-                config,
-                0x20d,
-                'energysave',
-                'Energy saving',
-                'mdi:flower',
-                'energySave',
-                (mode) => mode === 0,
-            )
+            /* Energy saving is exposed as a state-backed toggle without hiding
+             * reports outside cooling mode. Related file:
+             * tests/cloud/devices/RAC_056905_WW.test.ts. */
+            this.addConfigSwitchField(config, 0x20d, 'energysave', 'Energy saving', 'mdi:flower')
         }
 
         if (this.raw_clip_state[0x2cc] & 4) {
@@ -978,7 +971,6 @@ export default class Device extends TLVDevice {
             name: descFull,
             icon: icon,
             entity_category: 'config',
-            optimistic: true,
         }
         config['components'][name] = comp
 
@@ -987,42 +979,32 @@ export default class Device extends TLVDevice {
             name: '',
             comp: name,
             write_xform: (val) => {
-                this.jetMode = val === 'ON'
-                if (!this.jetMode) return 0
+                if (val !== 'ON') {
+                    this.jetMode = false
+                    return 0
+                }
 
-                /* ON */
-                if (jetCool && this.getModeTLV() === 0) return 1
-                if (jetHeat && this.getModeTLV() === 4) return 2
-                return 0
+                /* Writing '1' while powered off can immediately start cooling,
+                 * while writing '2' is ignored. Only accept ON while the unit is
+                 * already running in a supported mode. */
+                if (this.getPowerTLV() === 0 || this.getPowerTLV() == null) return undefined
+
+                if (jetCool && this.getModeTLV() === 0) {
+                    this.jetMode = true
+                    return 1
+                }
+                if (jetHeat && this.getModeTLV() === 4) {
+                    this.jetMode = true
+                    return 2
+                }
+                return undefined
             },
             read_xform: (raw) => {
-                if (jetCool && this.getModeTLV() === 0 && raw == 1) return 'ON'
-                if (jetHeat && this.getModeTLV() === 4 && raw == 2) return 'ON'
-                return 'OFF'
+                return (jetCool && raw === 1) || (jetHeat && raw === 2) ? 'ON' : 'OFF'
             },
             read_callback: (val) => {
-                // Ignore read value if not running
-                const powerTLV = this.getPowerTLV()
-                if (powerTLV === 0 || powerTLV == null) return false
-
-                // Ignore read value if not in the right mode
-                if (!((jetCool && this.getModeTLV() === 0) || (jetHeat && this.getModeTLV() === 4))) return false
-
                 this.jetMode = val === 'ON'
                 return true
-            },
-            write_callback: (val) => {
-                /*
-                 * Writing '1' in OFF state seem to immediately
-                 * power on into the cooling mode, while writing
-                 * '2' in the OFF state is ignored.
-                 * Be consistent and only allow enabling Jet mode
-                 * when running in the right mode.
-                 */
-                return (
-                    this.getPowerTLV() !== 0 &&
-                    ((jetCool && this.getModeTLV() === 0) || (jetHeat && this.getModeTLV() === 4))
-                )
             },
         })
 
@@ -1124,7 +1106,7 @@ export default class Device extends TLVDevice {
         name: string,
         desc: string,
         icon: string,
-        field_name: 'airClean' | 'jetMode' | 'energySave',
+        field_name: 'airClean' | 'jetMode',
         check_mode?: CheckMode,
     ) {
         const comp = {

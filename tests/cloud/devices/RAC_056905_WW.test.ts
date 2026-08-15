@@ -125,6 +125,8 @@ describe(MODEL_ID, () => {
         // Capability bits from the captured caps response unlocked these optional components.
         assert.ok(components.jet, 'jet (because 0x2CD bits 0x1|0x2)')
         assert.ok(components.energysave, 'energysave (because 0x2CC bit 0x2)')
+        assert.equal(components.jet.optimistic, undefined, 'jet uses reported device state')
+        assert.equal(components.energysave.optimistic, undefined, 'energy saving uses reported device state')
         assert.ok(components.autodry, 'autodry (because 0x2CC bit 0x4)')
         assert.equal(components.autodry.platform, 'switch')
         assert.equal(components.autodry.optimistic, undefined, 'switch uses reported device state')
@@ -197,9 +199,7 @@ describe(MODEL_ID, () => {
         assert.ok(Number(ha.getProperty(DEVICE_ID, 'energytotal', 'state')) >= 0.691)
         assert.equal(ha.getProperty(DEVICE_ID, 'odusuctiontemp', 'state'), 11)
 
-        // energysave is mode-dependent (cool only). With mode=heat its read_callback returns false,
-        // so it must NOT have been published.
-        assert.ok(!ha.getProperty(DEVICE_ID, 'energysave', 'state'), 'energysave suppressed in heat mode')
+        assert.equal(ha.getProperty(DEVICE_ID, 'energysave', 'state'), 'OFF')
 
         dev.drop()
     })
@@ -338,6 +338,72 @@ describe(MODEL_ID, () => {
 
         thinq.emit('data', buf(STATE_AUTO_DRY_OFF_HEX))
         assert.equal(ha.getProperty(DEVICE_ID, 'autodry', 'state'), 'OFF')
+
+        dev.drop()
+    })
+
+    test('energy saving switch publishes reported state outside cooling mode', (t) => {
+        const { thinq, dev, ha } = buildReadyDevice(t)
+
+        dev.raw_clip_state[0x1f9] = 4
+        dev.processKeyValue(0x20d, 1)
+        assert.equal(ha.getProperty(DEVICE_ID, 'energysave', 'state'), 'ON')
+
+        dev.processKeyValue(0x20d, 0)
+        assert.equal(ha.getProperty(DEVICE_ID, 'energysave', 'state'), 'OFF')
+
+        thinq.resetRecorder()
+        ha.setProperty(DEVICE_ID, 'energysave', 'command', 'ON')
+        assert.equal(dev.raw_clip_state[0x20d], 1)
+        assert.equal(thinq.outbox.length, 1)
+
+        ha.setProperty(DEVICE_ID, 'energysave', 'command', 'OFF')
+        assert.equal(dev.raw_clip_state[0x20d], 0)
+        assert.equal(thinq.outbox.length, 2)
+
+        dev.drop()
+    })
+
+    test('jet switch publishes reported cool and heat states regardless of current mode', (t) => {
+        const { dev, ha } = buildReadyDevice(t)
+
+        dev.raw_clip_state[0x1f9] = 3
+        dev.processKeyValue(0x323, 1)
+        assert.equal(ha.getProperty(DEVICE_ID, 'jet', 'state'), 'ON')
+
+        dev.processKeyValue(0x323, 2)
+        assert.equal(ha.getProperty(DEVICE_ID, 'jet', 'state'), 'ON')
+
+        dev.processKeyValue(0x323, 0)
+        assert.equal(ha.getProperty(DEVICE_ID, 'jet', 'state'), 'OFF')
+
+        dev.drop()
+    })
+
+    test('jet switch writes mode-specific ON values, always allows OFF, and blocks unsafe ON', (t) => {
+        const { thinq, dev, ha } = buildReadyDevice(t)
+
+        dev.raw_clip_state[0x1f7] = 1
+        dev.raw_clip_state[0x1f9] = 0
+        ha.setProperty(DEVICE_ID, 'jet', 'command', 'ON')
+        assert.equal(dev.raw_clip_state[0x323], 1)
+        assert.equal(thinq.outbox.length, 1)
+
+        thinq.resetRecorder()
+        dev.raw_clip_state[0x1f9] = 4
+        ha.setProperty(DEVICE_ID, 'jet', 'command', 'ON')
+        assert.equal(dev.raw_clip_state[0x323], 2)
+        assert.equal(thinq.outbox.length, 1)
+
+        thinq.resetRecorder()
+        dev.raw_clip_state[0x1f9] = 3
+        ha.setProperty(DEVICE_ID, 'jet', 'command', 'OFF')
+        assert.equal(dev.raw_clip_state[0x323], 0)
+        assert.equal(thinq.outbox.length, 1)
+
+        thinq.resetRecorder()
+        ha.setProperty(DEVICE_ID, 'jet', 'command', 'ON')
+        assert.equal(thinq.outbox.length, 0)
 
         dev.drop()
     })
