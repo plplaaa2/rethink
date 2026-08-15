@@ -31,6 +31,7 @@ type EnergyStats = {
     hourWh: number
     dayWh: number
     monthWh: number
+    totalWh: number
     lastIntervalKey?: number
 }
 
@@ -333,8 +334,9 @@ export default class Device extends AABBDevice {
                         unique_id: '$deviceid-energy_today',
                         state_topic: '$this/energy_today',
                         name: '오늘 누적 사용량',
-                        unit_of_measurement: 'Wh',
+                        unit_of_measurement: 'kWh',
                         state_class: 'total',
+                        suggested_display_precision: 3,
                         icon: 'mdi:calendar-today',
                     },
                     energy_month: {
@@ -347,6 +349,17 @@ export default class Device extends AABBDevice {
                         state_class: 'total',
                         suggested_display_precision: 3,
                         icon: 'mdi:calendar-month',
+                    },
+                    energy_total: {
+                        platform: 'sensor',
+                        device_class: 'energy',
+                        unique_id: '$deviceid-energy_total',
+                        state_topic: '$this/energy_total',
+                        name: '총 누적 사용량',
+                        unit_of_measurement: 'kWh',
+                        state_class: 'total_increasing',
+                        suggested_display_precision: 3,
+                        icon: 'mdi:counter',
                     },
                 },
             }),
@@ -477,7 +490,7 @@ export default class Device extends AABBDevice {
             date: localDate(now),
             month: localMonth(now),
         }
-        const empty: EnergyStats = { ...current, hourWh: 0, dayWh: 0, monthWh: 0 }
+        const empty: EnergyStats = { ...current, hourWh: 0, dayWh: 0, monthWh: 0, totalWh: 0 }
         const path = this.energyStatsPath()
         if (!path) return empty
         try {
@@ -487,6 +500,11 @@ export default class Device extends AABBDevice {
                 hourWh: saved.hour === current.hour ? Number(saved.hourWh) || 0 : 0,
                 dayWh: saved.date === current.date ? Number(saved.dayWh) || 0 : 0,
                 monthWh: saved.month === current.month ? Number(saved.monthWh) || 0 : 0,
+                totalWh: Number.isFinite(saved.totalWh)
+                    ? Number(saved.totalWh)
+                    : saved.month === current.month
+                      ? Number(saved.monthWh) || 0
+                      : 0,
                 ...(Number.isFinite(saved.lastIntervalKey) ? { lastIntervalKey: Number(saved.lastIntervalKey) } : {}),
             }
         } catch {
@@ -508,8 +526,9 @@ export default class Device extends AABBDevice {
 
     private publishEnergyStats() {
         this.publishProperty('energy_current_hour', this.energyStats.hourWh)
-        this.publishProperty('energy_today', this.energyStats.dayWh)
+        this.publishProperty('energy_today', Number((this.energyStats.dayWh / 1000).toFixed(3)))
         this.publishProperty('energy_month', Number((this.energyStats.monthWh / 1000).toFixed(3)))
+        this.publishProperty('energy_total', Number((this.energyStats.totalWh / 1000).toFixed(3)))
     }
 
     private processEnergyInterval(intervalWh: number, now = Date.now()) {
@@ -521,6 +540,7 @@ export default class Device extends AABBDevice {
         this.energyStats.hourWh += intervalWh
         this.energyStats.dayWh += intervalWh
         this.energyStats.monthWh += intervalWh
+        this.energyStats.totalWh += intervalWh
         this.publishEnergyStats()
         this.saveEnergyStats()
     }

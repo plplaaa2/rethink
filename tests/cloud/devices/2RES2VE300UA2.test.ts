@@ -2,6 +2,9 @@
  * Related files: cloud/devices/2RES2VE300UA2.ts, cloud/ha_bridge.ts. */
 import { describe, test } from 'node:test'
 import assert from 'node:assert/strict'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import DUT from '@/cloud/devices/2RES2VE300UA2'
 import type { Metadata } from '@/cloud/thinq'
 import { MockHAConnection, MockThinq2Device, buf, hex } from '@/tests/helpers/mocks'
@@ -41,6 +44,7 @@ describe('2RES2VE300UA2', () => {
             'energy_current_hour',
             'energy_today',
             'energy_month',
+            'energy_total',
         ])
             assert.ok(c[name], name)
         assert.equal((c.fridge as { platform: string }).platform, 'climate')
@@ -67,6 +71,9 @@ describe('2RES2VE300UA2', () => {
             '100%',
         ])
         assert.equal((c.night_glare_brightness as { entity_category: string }).entity_category, 'config')
+        assert.equal((c.energy_today as { unit_of_measurement: string }).unit_of_measurement, 'kWh')
+        assert.equal((c.energy_total as { unit_of_measurement: string }).unit_of_measurement, 'kWh')
+        assert.equal((c.energy_total as { state_class: string }).state_class, 'total_increasing')
         assert.equal(c.fresh_air_filter, undefined)
         assert.equal(c.flex_setpoint, undefined)
     })
@@ -118,7 +125,7 @@ describe('2RES2VE300UA2', () => {
         assert.equal(p.night_glare_mode, '비활성')
     })
 
-    test('accumulates 15-minute energy reports and ignores retransmits in the same interval', () => {
+    test('accumulates energy reports and ignores retransmits in the compatibility window', () => {
         const { ha, dev } = makeDevice()
         const processEnergy = (
             dev as unknown as { processEnergyInterval: (intervalWh: number, now: number) => void }
@@ -132,24 +139,27 @@ describe('2RES2VE300UA2', () => {
 
         const properties = ha.devices[DEVICE_ID].properties
         assert.equal(properties.energy_current_hour, 64)
-        assert.equal(properties.energy_today, 64)
+        assert.equal(properties.energy_today, 0.064)
         assert.equal(properties.energy_month, 0.064)
+        assert.equal(properties.energy_total, 0.064)
     })
 
     test('decodes the captured 10AF interval value as big-endian Wh', () => {
         const { ha, thinq } = makeDevice()
         thinq.emit('data', buf('AA0910AF0F0021F7BB'))
         assert.equal(ha.devices[DEVICE_ID].properties.energy_current_hour, 33)
-        assert.equal(ha.devices[DEVICE_ID].properties.energy_today, 33)
+        assert.equal(ha.devices[DEVICE_ID].properties.energy_today, 0.033)
         assert.equal(ha.devices[DEVICE_ID].properties.energy_month, 0.033)
+        assert.equal(ha.devices[DEVICE_ID].properties.energy_total, 0.033)
     })
 
     test('accepts the captured 10AF subtype 10 interval report', () => {
         const { ha, thinq } = makeDevice()
         thinq.emit('data', buf('AA0910AF10005A89BB'))
         assert.equal(ha.devices[DEVICE_ID].properties.energy_current_hour, 90)
-        assert.equal(ha.devices[DEVICE_ID].properties.energy_today, 90)
+        assert.equal(ha.devices[DEVICE_ID].properties.energy_today, 0.09)
         assert.equal(ha.devices[DEVICE_ID].properties.energy_month, 0.09)
+        assert.equal(ha.devices[DEVICE_ID].properties.energy_total, 0.09)
     })
 
     test('resets hour, day and month totals on Korea-time boundaries', () => {
@@ -161,8 +171,45 @@ describe('2RES2VE300UA2', () => {
         processEnergy(33, Date.parse('2026-07-31T15:13:00Z'))
         const properties = ha.devices[DEVICE_ID].properties
         assert.equal(properties.energy_current_hour, 33)
-        assert.equal(properties.energy_today, 33)
+        assert.equal(properties.energy_today, 0.033)
         assert.equal(properties.energy_month, 0.033)
+        assert.equal(properties.energy_total, 0.064)
+    })
+
+    test('migrates the saved current-month energy to the lifetime total baseline', () => {
+        const storagePath = mkdtempSync(join(tmpdir(), 'rethink-refrigerator-energy-'))
+        const originalScript = process.argv[1]
+        const originalConfig = process.argv[2]
+        process.argv[1] = 'rethink-cloud'
+        process.argv[2] = join(storagePath, 'config.json')
+        writeFileSync(
+            join(storagePath, `refrigerator-energy-${DEVICE_ID}.json`),
+            JSON.stringify({
+                hour: '2026-08-15T12',
+                date: '2026-08-15',
+                month: '2026-08',
+                hourWh: 29,
+                dayWh: 320,
+                monthWh: 640,
+            }),
+        )
+
+        try {
+            const { dev } = makeDevice()
+            const loadEnergy = (
+                dev as unknown as {
+                    loadEnergyStats: (now: number) => { monthWh: number; totalWh: number }
+                }
+            ).loadEnergyStats.bind(dev)
+            const migrated = loadEnergy(Date.parse('2026-08-15T03:00:00Z'))
+            assert.equal(migrated.monthWh, 640)
+            assert.equal(migrated.totalWh, 640)
+        } finally {
+            process.argv[1] = originalScript
+            if (originalConfig === undefined) delete process.argv[2]
+            else process.argv[2] = originalConfig
+            rmSync(storagePath, { recursive: true, force: true })
+        }
     })
 
     test('writes the live-captured fridge and freezer command layouts', () => {
