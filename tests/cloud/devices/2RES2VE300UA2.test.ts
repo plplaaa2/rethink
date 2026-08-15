@@ -37,6 +37,7 @@ describe('2RES2VE300UA2', () => {
             'door_open_duration_today',
             'door_open_warning',
             'fresh_air_filter',
+            'display_lock_status',
             'smart_care',
             'night_glare_mode',
             'night_glare_start',
@@ -56,6 +57,8 @@ describe('2RES2VE300UA2', () => {
         assert.equal((c.smart_care as { command_topic: string }).command_topic, '$this/smart_care/set')
         assert.equal((c.fresh_air_filter as { platform: string }).platform, 'sensor')
         assert.equal((c.fresh_air_filter as { command_topic?: string }).command_topic, undefined)
+        assert.equal((c.display_lock_status as { platform: string }).platform, 'sensor')
+        assert.equal((c.display_lock_status as { command_topic?: string }).command_topic, undefined)
         assert.equal((c.night_glare_mode as { platform: string }).platform, 'select')
         assert.deepEqual((c.night_glare_mode as { options: string[] }).options, ['비활성', '일출/일몰', '사용자'])
         assert.equal((c.night_glare_mode as { entity_category: string }).entity_category, 'config')
@@ -127,7 +130,20 @@ describe('2RES2VE300UA2', () => {
         assert.equal(p.door, 'OFF')
         assert.equal(p.smart_care, 'ON')
         assert.equal(p.fresh_air_filter, '스마트케어/진단 중')
+        assert.equal(p.display_lock_status, 1)
         assert.equal(p.night_glare_mode, '비활성')
+    })
+
+    test('publishes the display-lock raw status without assuming unverified polarity', () => {
+        const { ha, dev } = makeDevice()
+        const processStatus = (dev as unknown as { processStatus: (status: Buffer) => void }).processStatus.bind(dev)
+        const status = Buffer.alloc(68, 0xff)
+
+        for (const raw of [0, 1, 2]) {
+            status[10] = raw
+            processStatus(status)
+            assert.equal(ha.devices[DEVICE_ID].properties.display_lock_status, raw)
+        }
     })
 
     test('maps observed and shared Pure N Fresh status values without hiding unknown raw values', () => {

@@ -290,6 +290,13 @@ export default class Device extends AABBDevice {
                         name: 'Pure N Fresh 상태',
                         icon: 'mdi:air-filter',
                     },
+                    display_lock_status: {
+                        platform: 'sensor',
+                        unique_id: '$deviceid-display-lock-status',
+                        state_topic: '$this/display_lock_status',
+                        name: '표시창 잠금 상태',
+                        icon: 'mdi:lock-question',
+                    },
                     smart_care: {
                         platform: 'switch',
                         unique_id: '$deviceid-smart-care',
@@ -432,6 +439,7 @@ export default class Device extends AABBDevice {
         this.publishProperty('express_cool', rec[16] === 1 ? 'ON' : 'OFF')
         this.processDoor(rec[7] === 1)
         this.publishProperty('fresh_air_filter', freshAirFilterState(rec[4]))
+        this.publishProperty('display_lock_status', rec[10])
         this.publishProperty('smart_care', rec[17] === 1 ? 'ON' : 'OFF')
         this.nightGlareMode = rec[30] === 2 ? '일출/일몰' : rec[30] === 3 ? '사용자' : '비활성'
         this.publishProperty('night_glare_mode', this.nightGlareMode)
