@@ -571,6 +571,7 @@ export default class Device extends TLVDevice {
          * Related files: docs/rac-tlv-sensor-investigation.md,
          * tests/cloud/devices/RAC_056905_WW.test.ts. */
         this.addOptionalSensorField(config, 0x228, 'compressorfrequency', 'Compressor frequency', 'mdi:sine-wave', {
+            entity_category: undefined,
             state_class: 'measurement',
             unit_of_measurement: 'Hz',
             suggested_display_precision: 0,
@@ -581,7 +582,6 @@ export default class Device extends TLVDevice {
                 unique_id: '$deviceid-energyaccumulated',
                 name: 'Current operation energy',
                 icon: 'mdi:lightning-bolt',
-                entity_category: 'diagnostic',
                 device_class: 'energy',
                 state_class: 'total_increasing',
                 unit_of_measurement: 'kWh',
@@ -592,7 +592,6 @@ export default class Device extends TLVDevice {
                 unique_id: '$deviceid-energytotal',
                 name: 'Total energy',
                 icon: 'mdi:lightning-bolt-circle',
-                entity_category: 'diagnostic',
                 device_class: 'energy',
                 state_class: 'total_increasing',
                 unit_of_measurement: 'kWh',
@@ -638,6 +637,7 @@ export default class Device extends TLVDevice {
          * None of tested IDUs seem to usually notify by itself when this value changes.
          */
         this.addOptionalSensorField(config, 0x330, 'eev', 'EEV opening', 'mdi:valve', {
+            entity_category: undefined,
             state_class: 'measurement',
             suggested_display_precision: 0,
         })
@@ -665,6 +665,7 @@ export default class Device extends TLVDevice {
             'ODU suction temperature',
             'mdi:thermometer-chevron-down',
             (raw) => (raw <= 1 ? undefined : racPipeTemp[255 - raw]),
+            false,
         )
         this.addOptionalSensorTempField(
             config,
@@ -673,6 +674,7 @@ export default class Device extends TLVDevice {
             'ODU HEX temperature', // "HEX" = "heat exchanger"
             'mdi:heating-coil',
             (raw) => racPipeTemp[255 - raw],
+            false,
         )
         this.addOptionalSensorTempField(
             config,
@@ -681,6 +683,7 @@ export default class Device extends TLVDevice {
             'ODU air temperature',
             'mdi:thermometer-lines',
             (raw) => racAirTemp[255 - raw],
+            false,
         )
 
         /*
@@ -701,6 +704,7 @@ export default class Device extends TLVDevice {
             'Fan RPM',
             'mdi:fan',
             {
+                entity_category: undefined,
                 state_class: 'measurement',
                 unit_of_measurement: 'rpm',
                 suggested_display_precision: 0,
@@ -728,7 +732,7 @@ export default class Device extends TLVDevice {
 
         if (this.raw_clip_state[0x2d3] & 1) {
             // 15h - displayed in hex as "FH"
-            this.addTimerField(config, 0x21a, 'sleeptimer', 'Sleep timer', 'mdi:bed-clock', 15)
+            this.addTimerField(config, 0x21a, 'sleeptimer', 'Sleep timer', 'mdi:bed-clock', 15, 'config')
         }
 
         if (this.raw_clip_state[0x2d3] & 4) {
@@ -751,6 +755,7 @@ export default class Device extends TLVDevice {
                 unique_id: '$deviceid-autodry',
                 name: 'Auto dry',
                 icon: 'mdi:hair-dryer',
+                entity_category: 'config',
             }
             const compADryRem = {
                 platform: 'sensor',
@@ -925,7 +930,17 @@ export default class Device extends TLVDevice {
         this.query()
     }
 
-    addTimerField(config: DeviceDiscovery, id: number, name: string, desc: string, icon: string, max: number) {
+    /* Build timer controls with an optional Home Assistant entity category.
+     * Related file: tests/cloud/devices/RAC_056905_WW.test.ts. */
+    addTimerField(
+        config: DeviceDiscovery,
+        id: number,
+        name: string,
+        desc: string,
+        icon: string,
+        max: number,
+        entityCategory?: 'config',
+    ) {
         const comp = {
             platform: 'number',
             unique_id: '$deviceid-' + name,
@@ -937,6 +952,7 @@ export default class Device extends TLVDevice {
             max: max,
             step: 0.25,
             mode: 'slider',
+            entity_category: entityCategory,
         } as const
         config['components'][name] = comp
 
@@ -1064,6 +1080,7 @@ export default class Device extends TLVDevice {
         desc: string,
         icon?: string,
         read_xform?: FieldDefinition['read_xform'],
+        diagnostic: boolean = true,
     ) {
         this.addOptionalSensorField(
             config,
@@ -1076,6 +1093,7 @@ export default class Device extends TLVDevice {
                 unit_of_measurement: '°C',
                 state_class: 'measurement',
                 suggested_display_precision: 2,
+                entity_category: diagnostic ? 'diagnostic' : undefined,
             },
             read_xform,
         )
