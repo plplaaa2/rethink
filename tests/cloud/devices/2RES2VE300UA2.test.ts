@@ -36,7 +36,7 @@ describe('2RES2VE300UA2', () => {
             'door_open_count_today',
             'door_open_duration_today',
             'door_open_warning',
-            'smart_care_status',
+            'smart_care',
             'night_glare_mode',
             'night_glare_start',
             'night_glare_end',
@@ -51,11 +51,11 @@ describe('2RES2VE300UA2', () => {
         assert.equal((c.freezer as { platform: string }).platform, 'climate')
         assert.equal((c.fridge as { entity_category: string }).entity_category, 'config')
         assert.equal((c.freezer as { entity_category: string }).entity_category, 'config')
-        assert.equal((c.smart_care_status as { platform: string }).platform, 'binary_sensor')
+        assert.equal((c.smart_care as { platform: string }).platform, 'switch')
+        assert.equal((c.smart_care as { command_topic: string }).command_topic, '$this/smart_care/set')
         assert.equal((c.night_glare_mode as { platform: string }).platform, 'select')
         assert.deepEqual((c.night_glare_mode as { options: string[] }).options, ['비활성', '일출/일몰', '사용자'])
         assert.equal((c.night_glare_mode as { entity_category: string }).entity_category, 'config')
-        assert.equal((c.smart_care_status as { command_topic?: string }).command_topic, undefined)
         assert.equal((c.night_glare_mode as { command_topic?: string }).command_topic, '$this/night_glare_mode/set')
         assert.equal((c.night_glare_start as { platform: string }).platform, 'time')
         assert.equal((c.night_glare_end as { platform: string }).platform, 'time')
@@ -84,11 +84,13 @@ describe('2RES2VE300UA2', () => {
         const removal = ha.publishedConfigs[0].components
         assert.deepEqual(removal.fresh_air_filter, { platform: 'sensor' })
         assert.deepEqual(removal.smart_care, { platform: 'switch' })
+        assert.deepEqual(removal.smart_care_status, { platform: 'binary_sensor' })
         assert.deepEqual(removal.night_glare, { platform: 'switch' })
         assert.deepEqual(removal.night_glare_status, { platform: 'binary_sensor' })
         const current = ha.publishedConfigs[1].components
         assert.equal(current.fresh_air_filter, undefined)
-        assert.equal(current.smart_care, undefined)
+        assert.equal(current.smart_care.platform, 'switch')
+        assert.equal(current.smart_care_status, undefined)
         assert.equal(current.night_glare, undefined)
         assert.equal(current.night_glare_status, undefined)
     })
@@ -237,10 +239,28 @@ describe('2RES2VE300UA2', () => {
         assert.equal(thinq.outbox[0][4 + 3], 2)
     })
 
-    test('keeps Smart Care+ read-only', () => {
-        const { thinq, dev } = makeDevice()
+    test('writes the captured Smart Care+ ON and OFF commands and follows device status', () => {
+        const { ha, thinq, dev } = makeDevice()
         dev.setProperty('smart_care', 'ON')
-        assert.equal(thinq.outbox.length, 0)
+        assert.equal(
+            hex(thinq.outbox[0]),
+            'AA7CF017FF0000FFFFFFFFFFFFFFFFFFFF00FFFFFF01FFFFFF000000FFFF00FFFFFFFF00FFFFFFFFFFFFFFFFFF00FFFFFF1EFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0AFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB8BB',
+        )
+
+        thinq.resetRecorder()
+        dev.setProperty('smart_care', 'OFF')
+        assert.equal(
+            hex(thinq.outbox[0]),
+            'AA7CF017FF0000FFFFFFFFFFFFFFFFFFFF00FFFFFF00FFFFFF000000FFFF00FFFFFFFF00FFFFFFFFFFFFFFFFFF00FFFFFF1EFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0AFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFB9BB',
+        )
+
+        thinq.emit(
+            'data',
+            buf(
+                'AA8E10EC0206060107000000010001FFFFFF00FF0001FFFFFFFFFFFFFF020F0103FF030001FF00FFFFFFFFFF01FF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0078FF00000206060102000000010001FFFFFF00FF0000FFFFFFFFFFFFFF020F0103FF030001FF00FFFFFFFFFF01FF00FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF0078FF000061BB',
+            ),
+        )
+        assert.equal(ha.devices[DEVICE_ID].properties.smart_care, 'OFF')
     })
 
     test('maps night-glare status values to all three selector modes', () => {

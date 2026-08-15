@@ -12,3 +12,4 @@
 {"date":"2026-08-11","area":"rac-energy","caution":"Preserve /data/ha-state across add-on rebuilds and updates; deleting it resets the software-maintained RAC Total energy baseline."}
 {"date":"2026-08-14","area":"refrigerator-night-glare","caution":"Encode 2RES2VE300UA2 F010 schedule times as UTC; status byte 30 maps 2 to sunrise/sunset and 3 to the user schedule, and persist user-entered local times across restarts."}
 {"date":"2026-08-14","area":"refrigerator-night-glare-brightness","caution":"Only expose the observed discrete F010 brightness values 0, 10, 30, 50, 80, and 100; keep 30 as the default and reject arbitrary MQTT values."}
+{"date":"2026-08-15","area":"refrigerator-smart-care","caution":"Treat the F017 ACK as receipt only; publish Smart Care+ state from status offset 17 in 10EB or 10EC, because an accepted command may not transition while the appliance is busy."}

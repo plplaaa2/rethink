@@ -12,6 +12,7 @@ LG ThinQ 가전을 LG 클라우드 대신 로컬 Rethink 서버에 연결하고,
 - 인증서, 브리지 상태, 런타임 설정 및 에어컨·냉장고의 소프트웨어 총 누적 전력량을 `/data`에 영구 보관
 - Home Assistant ingress를 통한 관리 화면 접근
 - Home Assistant 위치·시간대와 `sun.sun`을 사용하는 `2RES2VE300UA2` 야간 눈부심 방지 모드 설정
+- `2RES2VE300UA2` 스마트케어 상태 확인 및 검증된 ON/OFF 제어
 - ThinQ 1 및 ThinQ 2 로컬 엔드포인트 제공
 
 ## 설치 및 설정

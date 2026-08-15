@@ -272,13 +272,13 @@ export default class Device extends AABBDevice {
                         name: 'Door open warning',
                         icon: 'mdi:fridge-alert-outline',
                     },
-                    smart_care_status: {
-                        platform: 'binary_sensor',
-                        unique_id: '$deviceid-smart-care-status',
+                    smart_care: {
+                        platform: 'switch',
+                        unique_id: '$deviceid-smart-care',
                         state_topic: '$this/smart_care',
+                        command_topic: '$this/smart_care/set',
                         name: 'Smart care+',
                         icon: 'mdi:creation-outline',
-                        entity_category: 'diagnostic',
                     },
                     night_glare_mode: {
                         platform: 'select',
@@ -366,6 +366,7 @@ export default class Device extends AABBDevice {
             {
                 fresh_air_filter: { platform: 'sensor' },
                 smart_care: { platform: 'switch' },
+                smart_care_status: { platform: 'binary_sensor' },
                 night_glare: { platform: 'switch' },
                 night_glare_status: { platform: 'binary_sensor' },
             },
@@ -687,6 +688,8 @@ export default class Device extends AABBDevice {
             this.sendSetting(16, mqttValue === 'ON' ? 1 : 0)
         } else if (prop === 'express_freeze') {
             this.sendSetting(3, mqttValue === 'ON' ? 2 : 1)
+        } else if (prop === 'smart_care') {
+            this.sendSetting(17, mqttValue === 'ON' ? 1 : 0)
         } else if (prop === 'night_glare_mode' && NIGHT_GLARE_MODES.includes(mqttValue as NightGlareMode)) {
             void this.setNightGlareMode(mqttValue as NightGlareMode)
         } else if (prop === 'night_glare_start') {
