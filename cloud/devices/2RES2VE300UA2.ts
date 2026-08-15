@@ -17,6 +17,17 @@ const NIGHT_GLARE_BRIGHTNESS_OPTIONS = ['0%', '10%', '30%', '50%', '80%', '100%'
 type NightGlareBrightness = (typeof NIGHT_GLARE_BRIGHTNESS_OPTIONS)[number]
 type NightGlareSettings = { start: string; end: string; brightness: NightGlareBrightness }
 
+function freshAirFilterState(raw: number) {
+    const states: Record<number, string> = {
+        1: '꺼짐',
+        2: '자동',
+        3: '파워',
+        4: '필터 교체 필요',
+        7: '스마트케어/진단 중',
+    }
+    return states[raw] ?? `알 수 없음 (${raw})`
+}
+
 type DoorStats = {
     date: string
     count: number
@@ -272,6 +283,13 @@ export default class Device extends AABBDevice {
                         name: 'Door open warning',
                         icon: 'mdi:fridge-alert-outline',
                     },
+                    fresh_air_filter: {
+                        platform: 'sensor',
+                        unique_id: '$deviceid-fresh-air-filter',
+                        state_topic: '$this/fresh_air_filter',
+                        name: 'Pure N Fresh 상태',
+                        icon: 'mdi:air-filter',
+                    },
                     smart_care: {
                         platform: 'switch',
                         unique_id: '$deviceid-smart-care',
@@ -413,6 +431,7 @@ export default class Device extends AABBDevice {
         this.publishProperty('express_freeze', rec[3] === 2 ? 'ON' : 'OFF')
         this.publishProperty('express_cool', rec[16] === 1 ? 'ON' : 'OFF')
         this.processDoor(rec[7] === 1)
+        this.publishProperty('fresh_air_filter', freshAirFilterState(rec[4]))
         this.publishProperty('smart_care', rec[17] === 1 ? 'ON' : 'OFF')
         this.nightGlareMode = rec[30] === 2 ? '일출/일몰' : rec[30] === 3 ? '사용자' : '비활성'
         this.publishProperty('night_glare_mode', this.nightGlareMode)

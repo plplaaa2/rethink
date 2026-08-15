@@ -36,6 +36,7 @@ describe('2RES2VE300UA2', () => {
             'door_open_count_today',
             'door_open_duration_today',
             'door_open_warning',
+            'fresh_air_filter',
             'smart_care',
             'night_glare_mode',
             'night_glare_start',
@@ -53,6 +54,8 @@ describe('2RES2VE300UA2', () => {
         assert.equal((c.freezer as { entity_category: string }).entity_category, 'config')
         assert.equal((c.smart_care as { platform: string }).platform, 'switch')
         assert.equal((c.smart_care as { command_topic: string }).command_topic, '$this/smart_care/set')
+        assert.equal((c.fresh_air_filter as { platform: string }).platform, 'sensor')
+        assert.equal((c.fresh_air_filter as { command_topic?: string }).command_topic, undefined)
         assert.equal((c.night_glare_mode as { platform: string }).platform, 'select')
         assert.deepEqual((c.night_glare_mode as { options: string[] }).options, ['비활성', '일출/일몰', '사용자'])
         assert.equal((c.night_glare_mode as { entity_category: string }).entity_category, 'config')
@@ -74,7 +77,6 @@ describe('2RES2VE300UA2', () => {
         assert.equal((c.energy_today as { unit_of_measurement: string }).unit_of_measurement, 'kWh')
         assert.equal((c.energy_total as { unit_of_measurement: string }).unit_of_measurement, 'kWh')
         assert.equal((c.energy_total as { state_class: string }).state_class, 'total_increasing')
-        assert.equal(c.fresh_air_filter, undefined)
         assert.equal(c.flex_setpoint, undefined)
     })
 
@@ -88,7 +90,7 @@ describe('2RES2VE300UA2', () => {
         assert.deepEqual(removal.night_glare, { platform: 'switch' })
         assert.deepEqual(removal.night_glare_status, { platform: 'binary_sensor' })
         const current = ha.publishedConfigs[1].components
-        assert.equal(current.fresh_air_filter, undefined)
+        assert.equal(current.fresh_air_filter.platform, 'sensor')
         assert.equal(current.smart_care.platform, 'switch')
         assert.equal(current.smart_care_status, undefined)
         assert.equal(current.night_glare, undefined)
@@ -124,7 +126,27 @@ describe('2RES2VE300UA2', () => {
         assert.equal(p.express_freeze, 'OFF')
         assert.equal(p.door, 'OFF')
         assert.equal(p.smart_care, 'ON')
+        assert.equal(p.fresh_air_filter, '스마트케어/진단 중')
         assert.equal(p.night_glare_mode, '비활성')
+    })
+
+    test('maps observed and shared Pure N Fresh status values without hiding unknown raw values', () => {
+        const { ha, dev } = makeDevice()
+        const processStatus = (dev as unknown as { processStatus: (status: Buffer) => void }).processStatus.bind(dev)
+        const status = Buffer.alloc(68, 0xff)
+
+        for (const [raw, expected] of [
+            [1, '꺼짐'],
+            [2, '자동'],
+            [3, '파워'],
+            [4, '필터 교체 필요'],
+            [7, '스마트케어/진단 중'],
+            [9, '알 수 없음 (9)'],
+        ] as const) {
+            status[4] = raw
+            processStatus(status)
+            assert.equal(ha.devices[DEVICE_ID].properties.fresh_air_filter, expected)
+        }
     })
 
     test('accumulates energy reports and ignores retransmits in the compatibility window', () => {
@@ -261,6 +283,7 @@ describe('2RES2VE300UA2', () => {
             ),
         )
         assert.equal(ha.devices[DEVICE_ID].properties.smart_care, 'OFF')
+        assert.equal(ha.devices[DEVICE_ID].properties.fresh_air_filter, '자동')
     })
 
     test('maps night-glare status values to all three selector modes', () => {
