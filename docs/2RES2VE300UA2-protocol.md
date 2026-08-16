@@ -85,6 +85,39 @@ AA0EF0ED1211010000010400EBBB
 
 `FF` in a full `10EB`/`10EC` status record usually indicates unsupported or unavailable data. In an `F017` command, `FF` instead means “leave unchanged.” Zero can be a valid OFF/default value and must not automatically be treated as unsupported.
 
+## Home Assistant exposure matrix
+
+Protocol evidence and Home Assistant exposure are separate concerns. A field can be confirmed from packets but intentionally remain unexposed, while a Home Assistant entity can be derived locally without representing an appliance-native field.
+
+### Exposed entities
+
+| Home Assistant entity                             | Source                                         | Protocol confidence                                       | Exposure type and limitations                                                                                   |
+| ------------------------------------------------- | ---------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Fridge temperature control                        | `status[1]`, `F017`                            | Confirmed                                                 | Climate entity; exposes the configured setpoint, not measured compartment temperature                           |
+| Freezer temperature control                       | `status[2]`, `F017`                            | Confirmed                                                 | Climate entity; exposes the configured setpoint, not measured compartment temperature                           |
+| Express freeze                                    | `status[3]`, `F017`                            | Confirmed                                                 | State-backed switch                                                                                             |
+| Express cool                                      | `status[16]`, `F017`                           | Confirmed                                                 | State-backed switch                                                                                             |
+| Door                                              | `status[7]`                                    | Confirmed                                                 | Read-only binary sensor for any door open                                                                       |
+| Pure N Fresh                                      | `status[4]`                                    | Mixed                                                     | Read-only text sensor; values `2` and `7` are directly observed, while other labels come from the shared layout |
+| Display lock status                               | `status[10]`                                   | Strong candidate                                          | Read-only raw numeric sensor; field identity and polarity are not independently verified                        |
+| Smart Care+                                       | `status[17]`, `F017`                           | Confirmed                                                 | State-backed switch                                                                                             |
+| Night-glare mode                                  | `status[30]`, `F010`                           | Confirmed for modes `2` and `3`                           | Configuration select; disabled is represented by other values                                                   |
+| Night-glare start/end/brightness                  | `F010` plus saved Home Assistant configuration | Command format confirmed                                  | Configuration entities; schedule and brightness are not fully read back from the status record                  |
+| Door-open count, duration, and warning            | Local tracking from `status[7]`                | Not appliance-native                                      | Software-derived Home Assistant entities; reset and persistence follow integration behavior                     |
+| Current-hour, daily, monthly, and lifetime energy | Local accumulation from `10AF`-related reports | Strong candidate input; exact raw unit/window unconfirmed | Software-derived sensors; they must not be interpreted as direct appliance counters                             |
+
+### Confirmed or observed data not exposed as entities
+
+| Data                                                            | Reason for remaining unexposed                                                                          |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `status[0]`, `[5]`, `[6]`, `[8]`, `[9]`, `[14]`, `[25]`, `[26]` | Shared-layout names or semantics are not sufficiently verified for this model                           |
+| `status[27]`, `[28]`                                            | Refrigerator/freezer temperature-maintenance candidates still need isolated fault-to-normal transitions |
+| `status[32]`, `[40]`, `[64]`                                    | Raw values are observed, but their meanings are unknown                                                 |
+| Raw `10AF` report                                               | Energy relationship is plausible, but the report's unit and accumulation window are not proven          |
+| `1018`, `1072`                                                  | Service/keepalive traffic without a useful verified entity meaning                                      |
+| Actual fridge/freezer internal temperature                      | No measured-temperature field has been identified; existing climate values are setpoints only           |
+| Instantaneous power in watts                                    | No verified instantaneous-power field has been identified                                               |
+
 ## F017 setting commands
 
 The appliance uses a 118-byte live-captured command body beginning with `F017`. For verified shared fields, the command byte is located at:
