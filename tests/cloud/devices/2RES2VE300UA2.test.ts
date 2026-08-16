@@ -80,6 +80,8 @@ describe('2RES2VE300UA2', () => {
         assert.equal((c.energy_today as { unit_of_measurement: string }).unit_of_measurement, 'kWh')
         assert.equal((c.energy_total as { unit_of_measurement: string }).unit_of_measurement, 'kWh')
         assert.equal((c.energy_total as { state_class: string }).state_class, 'total_increasing')
+        for (const name of ['energy_current_hour', 'energy_today', 'energy_month', 'energy_total'])
+            assert.equal((c[name] as { suggested_display_precision: number }).suggested_display_precision, 2, name)
         assert.equal(c.flex_setpoint, undefined)
     })
 

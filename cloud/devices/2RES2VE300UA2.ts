@@ -351,6 +351,7 @@ export default class Device extends AABBDevice {
                         name: '현재 시간 누적 사용량',
                         unit_of_measurement: 'Wh',
                         state_class: 'total',
+                        suggested_display_precision: 2,
                         icon: 'mdi:lightning-bolt',
                     },
                     energy_today: {
@@ -361,7 +362,7 @@ export default class Device extends AABBDevice {
                         name: '오늘 누적 사용량',
                         unit_of_measurement: 'kWh',
                         state_class: 'total',
-                        suggested_display_precision: 3,
+                        suggested_display_precision: 2,
                         icon: 'mdi:calendar-today',
                     },
                     energy_month: {
@@ -372,7 +373,7 @@ export default class Device extends AABBDevice {
                         name: '금월 누적 사용량',
                         unit_of_measurement: 'kWh',
                         state_class: 'total',
-                        suggested_display_precision: 3,
+                        suggested_display_precision: 2,
                         icon: 'mdi:calendar-month',
                     },
                     energy_total: {
@@ -383,7 +384,7 @@ export default class Device extends AABBDevice {
                         name: '총 누적 사용량',
                         unit_of_measurement: 'kWh',
                         state_class: 'total_increasing',
-                        suggested_display_precision: 3,
+                        suggested_display_precision: 2,
                         icon: 'mdi:counter',
                     },
                 },
