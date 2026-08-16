@@ -7,7 +7,8 @@
 |-- cloud/                   # ThinQ endpoints and MQTT discovery
 |   `-- devices/2RES2VE300UA2.ts # LG Korean refrigerator protocol handler
 |-- docs/                    # Reverse-engineering investigation notes
-|   |-- 2RES2VE300UA2-protocol.md # Korean refrigerator protocol captures and field map
+|   |-- 2RES2VE300UA2-protocol-en.md # English refrigerator protocol captures and field map
+|   |-- 2RES2VE300UA2-protocol-ko.md # Korean refrigerator protocol captures and field map
 |   |-- RAC_056905_WW-protocol.md # RAC TLV protocol, controls, sensors, and safety notes
 |   `-- rac-tlv-sensor-investigation.md # RAC TLV sensor observations
 |-- html/                    # Management interface assets
