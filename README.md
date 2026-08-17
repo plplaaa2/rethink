@@ -16,6 +16,7 @@ LG ThinQ 가전을 LG 클라우드 대신 로컬 Rethink 서버에 연결하고,
 - `2RES2VE300UA2` Pure N Fresh 운전·진단 상태 확인
 - `2RES2VE300UA2` 표시창 잠금 원시 상태 확인
 - ThinQ 1 및 ThinQ 2 로컬 엔드포인트 제공
+- AS121VRST (`AIR_910604_WW`) 전원·쾌속·공기 제균·취침 예약 제어 및 필터 잔여 정보 확인
 
 ## 설치 및 설정
 
@@ -78,6 +79,8 @@ The following appliances are currently supported in rethink:
     - 👍 F4X7511TWS (VCDWL2QEUK), Front-Load Washing Machine - mostly working
     - 🫤 WT7300CW - preliminary support
     - 👍 WM3900HBA (F3L2CYU\_\_), Front-Load Washing Machine - mostly working
+- Air Purifiers:
+    - 🫤 AS121VRST (AIR_910604_WW) - confirmed controls and filter telemetry only
 - Dryers:
     - 🫤 DLE7300WE - preliminary support
     - 👍 DLEX3900B (RV13B6BSD_D_US_WIFI), Electric Dryer - mostly working

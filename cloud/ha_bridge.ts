@@ -21,6 +21,7 @@ import F3L2CYU__ from './devices/F3L2CYU__'
 import RV13B6BSD_D_US_WIFI from './devices/RV13B6BSD_D_US_WIFI'
 import WTL_FXU_BDV_NA_01 from './devices/WTL_FXU_BDV_NA_01'
 import Dev_2RES2VE300UA2 from './devices/2RES2VE300UA2'
+import AIR_910604_WW from './devices/AIR_910604_WW'
 import { Device as T1Device } from './thinq1/device'
 import { Device as T2Device } from './thinq2/device'
 import { type Connection } from './homeassistant'
@@ -33,6 +34,7 @@ type T2Factory = new (HA: Connection, thinq: T2Device, metadata: Metadata) => HA
 
 const t1deviceTypes: Record<string, T1Factory> = {
     WTDN3,
+    AIR_910604_WW,
 }
 
 const t2deviceTypes: Record<string, T2Factory> = {
