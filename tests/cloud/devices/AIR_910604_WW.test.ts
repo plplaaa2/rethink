@@ -22,11 +22,10 @@ describe(MODEL_ID, () => {
         const { ha } = makeDevice()
         const components = ha.devices[DEVICE_ID].config!.components as Record<string, Record<string, unknown>>
         assert.deepEqual(Object.keys(components), [
-            'power',
+            'fan',
             'air_fast',
             'air_removal',
             'sleep_timer',
-            'wind_strength',
             'pm1',
             'pm25',
             'pm10',
@@ -34,8 +33,12 @@ describe(MODEL_ID, () => {
             'filter_remaining',
         ])
         assert.deepEqual(components.sleep_timer.options, ['Off', '2 hours', '4 hours', '8 hours', '12 hours'])
-        assert.deepEqual(components.wind_strength.options, ['Low', 'Medium', 'High', 'Auto'])
-        assert.equal(components.power.state_topic, '$this/power')
+        assert.equal(components.fan.platform, 'fan')
+        assert.equal(components.fan.state_topic, '$this/power')
+        assert.equal(components.fan.command_topic, '$this/power/set')
+        assert.deepEqual(components.fan.preset_modes, ['Low', 'Medium', 'High', 'Auto'])
+        assert.equal(components.fan.preset_mode_state_topic, '$this/wind_strength')
+        assert.equal(components.fan.preset_mode_command_topic, '$this/wind_strength/set')
         assert.equal(components.pm25.unit_of_measurement, 'µg/m³')
     })
 

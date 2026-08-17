@@ -75,13 +75,16 @@ export default class Device extends HADevice {
             allowExtendedType({
                 ...HADevice.config(meta, { name: 'LG Air Purifier' }),
                 components: {
-                    power: {
-                        platform: 'switch',
-                        unique_id: '$deviceid-power',
+                    fan: {
+                        platform: 'fan',
+                        unique_id: '$deviceid-fan',
                         state_topic: '$this/power',
                         command_topic: '$this/power/set',
                         name: '',
                         icon: 'mdi:air-purifier',
+                        preset_mode_state_topic: '$this/wind_strength',
+                        preset_mode_command_topic: '$this/wind_strength/set',
+                        preset_modes: WIND_STRENGTH_OPTIONS,
                     },
                     air_fast: {
                         platform: 'switch',
@@ -108,15 +111,6 @@ export default class Device extends HADevice {
                         name: 'Sleep timer',
                         icon: 'mdi:timer-sand',
                         entity_category: 'config',
-                    },
-                    wind_strength: {
-                        platform: 'select',
-                        unique_id: '$deviceid-wind-strength',
-                        state_topic: '$this/wind_strength',
-                        command_topic: '$this/wind_strength/set',
-                        options: WIND_STRENGTH_OPTIONS,
-                        name: 'Fan speed',
-                        icon: 'mdi:fan',
                     },
                     pm1: {
                         platform: 'sensor',
