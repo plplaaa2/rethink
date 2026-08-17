@@ -1,5 +1,6 @@
 /* Implements confirmed ThinQ 1 controls, monitor state, and filter telemetry for AIR_910604_WW.
- * Related files: cloud/ha_bridge.ts, tests/cloud/devices/AIR_910604_WW.test.ts. */
+ * Related files: cloud/ha_bridge.ts, cloud/thinq1/connection.ts, cloud/thinq1/device.ts,
+ * tests/cloud/devices/AIR_910604_WW.test.ts. */
 import HADevice from './base'
 import { Device as Thinq1Device } from '../thinq1/device'
 import { type Connection } from '../homeassistant'
@@ -23,10 +24,12 @@ const WIND_STRENGTH_VALUES: Record<string, string> = {
 
 const SLEEP_TIMER_OPTIONS = Object.keys(SLEEP_TIMER_VALUES)
 const WIND_STRENGTH_OPTIONS = Object.keys(WIND_STRENGTH_VALUES)
-const MONITOR_INTERVAL_MS = 60_000
+const MONITOR_ON_INTERVAL_MS = 60_000
+const MONITOR_OFF_INTERVAL_MS = 5 * 60_000
 const MONITOR_TIMEOUT_MS = 10_000
-const CONTROL_REFRESH_DELAY_MS = 1_000
+const CONTROL_REFRESH_DELAY_MS = 2_000
 const FILTER_QUERY_DELAY_MS = 1_000
+const INTERNAL_ACK_IGNORE_MS = 1_000
 
 type FilterStatus = {
     RemainTime?: unknown
@@ -60,7 +63,9 @@ export default class Device extends HADevice {
     private started = false
     private monitorInFlight = false
     private filterRequested = false
-    private monitorInterval: NodeJS.Timeout | undefined
+    private lastPowerState: 'ON' | 'OFF' | undefined
+    private ignoreAckOnlyUntil = 0
+    private periodicTimeout: NodeJS.Timeout | undefined
     private monitorTimeout: NodeJS.Timeout | undefined
     private refreshTimeout: NodeJS.Timeout | undefined
     private filterTimeout: NodeJS.Timeout | undefined
@@ -163,18 +168,17 @@ export default class Device extends HADevice {
         )
 
         thinq.on('data', (buf) => this.processData(buf))
+        thinq.on('response', (body) => this.processResponse(body))
     }
 
     start() {
         this.started = true
         this.requestMonitorSnapshot()
-        this.monitorInterval = setInterval(() => this.requestMonitorSnapshot(), MONITOR_INTERVAL_MS)
-        this.monitorInterval.unref()
     }
 
     drop() {
         this.started = false
-        if (this.monitorInterval) clearInterval(this.monitorInterval)
+        if (this.periodicTimeout) clearTimeout(this.periodicTimeout)
         if (this.monitorTimeout) clearTimeout(this.monitorTimeout)
         if (this.refreshTimeout) clearTimeout(this.refreshTimeout)
         if (this.filterTimeout) clearTimeout(this.filterTimeout)
@@ -183,7 +187,10 @@ export default class Device extends HADevice {
 
     private requestMonitorSnapshot() {
         if (!this.started || this.monitorInFlight) return
+        if (this.periodicTimeout) clearTimeout(this.periodicTimeout)
+        this.periodicTimeout = undefined
         this.monitorInFlight = true
+        this.ignoreAckOnlyUntil = Date.now() + INTERNAL_ACK_IGNORE_MS
         this.thinq.send({ Cmd: 'Mon', CmdOpt: 'Start' })
         this.monitorTimeout = setTimeout(() => this.finishMonitorSnapshot(), MONITOR_TIMEOUT_MS)
         this.monitorTimeout.unref()
@@ -194,7 +201,20 @@ export default class Device extends HADevice {
         this.monitorInFlight = false
         if (this.monitorTimeout) clearTimeout(this.monitorTimeout)
         this.monitorTimeout = undefined
+        this.ignoreAckOnlyUntil = Date.now() + INTERNAL_ACK_IGNORE_MS
         this.thinq.send({ Cmd: 'Mon', CmdOpt: 'Stop' })
+        this.schedulePeriodicSnapshot()
+    }
+
+    private schedulePeriodicSnapshot() {
+        if (!this.started) return
+        if (this.periodicTimeout) clearTimeout(this.periodicTimeout)
+        const delay = this.lastPowerState === 'OFF' ? MONITOR_OFF_INTERVAL_MS : MONITOR_ON_INTERVAL_MS
+        this.periodicTimeout = setTimeout(() => {
+            this.periodicTimeout = undefined
+            this.requestMonitorSnapshot()
+        }, delay)
+        this.periodicTimeout.unref()
     }
 
     private scheduleMonitorSnapshot(delay = CONTROL_REFRESH_DELAY_MS) {
@@ -221,9 +241,16 @@ export default class Device extends HADevice {
     private readonly publishCache: Record<string, string | number> = {}
 
     private publishProperty(prop: string, value: string | number) {
+        if (prop === 'power' && (value === 'ON' || value === 'OFF')) this.lastPowerState = value
         if (this.publishCache[prop] === value) return
         this.publishCache[prop] = value
         this.HA.publishProperty(this.id, prop, value)
+    }
+
+    private processResponse(body: Record<string, unknown>) {
+        if (body.ReturnCode !== '0000' || body.Data !== undefined) return
+        if (!this.started || this.monitorInFlight || Date.now() < this.ignoreAckOnlyUntil) return
+        this.scheduleMonitorSnapshot(0)
     }
 
     private processData(buf: Buffer) {

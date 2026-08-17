@@ -136,7 +136,7 @@ describe(MODEL_ID, () => {
         })
     })
 
-    test('a control started after initialization schedules a one-shot state reconciliation', async () => {
+    test('an ACK-only response after control starts immediate one-shot state reconciliation', async () => {
         const { thinq, dev } = makeDevice()
         dev.start()
         thinq.emit('data', Buffer.from('{"Operation":"1"}'))
@@ -145,7 +145,8 @@ describe(MODEL_ID, () => {
 
         dev.setProperty('air_fast', 'ON')
         assert.deepEqual(thinq.sent, [{ Cmd: 'Control', CmdOpt: 'Set', Value: { AirFast: '1' } }])
-        await new Promise((resolve) => setTimeout(resolve, 1_050))
+        thinq.emit('response', { ReturnCode: '0000' })
+        await new Promise((resolve) => setTimeout(resolve, 10))
         assert.deepEqual(thinq.sent, [
             { Cmd: 'Control', CmdOpt: 'Set', Value: { AirFast: '1' } },
             { Cmd: 'Mon', CmdOpt: 'Start' },

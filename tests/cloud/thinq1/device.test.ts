@@ -8,6 +8,7 @@ import { make } from '@/util/length_prefixed_frame'
 
 type MockConnectionEvents = {
     status: (buffer: Buffer) => void
+    response: (body: Record<string, unknown>) => void
     close: () => void
     error: (error: Error) => void
 }
@@ -30,13 +31,16 @@ test('parallel connections share one device without duplicating outbound command
         modelName: 'AIR_910604_WW',
     })
     const reports: Buffer[] = []
+    const responses: Record<string, unknown>[] = []
     let closes = 0
     device.on('data', (packet) => reports.push(packet))
+    device.on('response', (body) => responses.push(body))
     device.on('close', () => closes++)
 
     device.addConnection(second as never)
     first.emit('status', Buffer.from('first'))
     second.emit('status', Buffer.from('second'))
+    second.emit('response', { ReturnCode: '0000' })
     device.send({ Cmd: 'Control' })
 
     assert.deepEqual(
@@ -45,6 +49,7 @@ test('parallel connections share one device without duplicating outbound command
     )
     assert.equal(first.sent.length, 0)
     assert.equal(second.sent.length, 1)
+    assert.deepEqual(responses, [{ ReturnCode: '0000' }])
 
     second.emit('close')
     assert.equal(closes, 0)
@@ -66,7 +71,11 @@ test('acceptor keeps parallel sockets for one device instead of reconnecting the
     const second = new PassThrough()
     let newDevices = 0
     let droppedDevices = 0
-    acceptor.on('newDevice', () => newDevices++)
+    let responseCode: unknown
+    acceptor.on('newDevice', (device) => {
+        newDevices++
+        device.on('response', (body) => (responseCode = body.ReturnCode))
+    })
     acceptor.on('dropDevice', () => droppedDevices++)
 
     const alive = make(
@@ -77,10 +86,19 @@ test('acceptor keeps parallel sockets for one device instead of reconnecting the
     )
     acceptor.accept(first)
     first.write(alive)
+    first.write(
+        make(
+            JSON.stringify({
+                Header: { 'x-lgedm-deviceId': 'device-id' },
+                Body: { CmdWId: 'button-change', ReturnCode: '0000' },
+            }),
+        ),
+    )
     acceptor.accept(second)
     second.write(alive)
 
     assert.equal(newDevices, 1)
+    assert.equal(responseCode, '0000')
     assert.equal(first.destroyed, false)
     assert.equal(second.destroyed, false)
 

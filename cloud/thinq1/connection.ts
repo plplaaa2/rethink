@@ -1,3 +1,5 @@
+/* Decodes ThinQ 1 frames and forwards status payloads plus response envelopes.
+ * Related files: cloud/thinq1/device.ts, cloud/devices/AIR_910604_WW.ts. */
 import { TypedEmitter } from 'tiny-typed-emitter'
 import { splitter, make as makeFrame } from '@/util/length_prefixed_frame'
 import { Duplex } from 'node:stream'
@@ -6,6 +8,7 @@ import log from '@/util/logging'
 type ConnectionEvents = {
     init: (id: string) => void
     status: (buffer: Buffer) => void
+    response: (body: Record<string, unknown>) => void
     close: () => void
     error: (error: Error) => void
 }
@@ -42,6 +45,10 @@ export class Connection extends TypedEmitter<ConnectionEvents> {
 
                 if (request?.Body?.Format === 'B64' && typeof request.Body.Data === 'string') {
                     this.emit('status', Buffer.from(request.Body.Data, 'base64'))
+                }
+
+                if (request?.Body?.ReturnCode !== undefined && typeof request.Body === 'object') {
+                    this.emit('response', request.Body as Record<string, unknown>)
                 }
 
                 if (request?.Body?.ReturnCode === undefined) {
