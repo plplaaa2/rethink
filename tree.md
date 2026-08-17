@@ -11,6 +11,7 @@
 |   |-- 2RES2VE300UA2-protocol-en.md # English refrigerator protocol captures and field map
 |   |-- 2RES2VE300UA2-protocol-ko.md # Korean refrigerator protocol captures and field map
 |   |-- AIR_910604_WW-protocol-ko.md # Korean AS121VRST confirmed controls and filter query
+|   |-- AS121VRST-registration-ko.md # Korean AS121VRST Wi-Fi, DNS, and bridge registration guide
 |   |-- RAC_056905_WW-protocol.md # RAC TLV protocol, controls, sensors, and safety notes
 |   `-- rac-tlv-sensor-investigation.md # RAC TLV sensor observations
 |-- html/                    # Management interface assets

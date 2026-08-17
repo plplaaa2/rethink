@@ -46,6 +46,9 @@ AdGuard Home 애드온 구성에서는 PC에서 `nslookup rethink.home.arpa 192.
 
 필수 포트와 상세 옵션은 [애드온 사용 설명서](rethink-addon/DOCS.md)를 참고하십시오. 가전 및 관리 포트를 인터넷에 직접 공개하지 마십시오.
 
+AS121VRST 공기청정기의 구형 ThinQ 1 설정 AP, LG 앱 Wi-Fi 등록, 클라이언트별 DNS 재작성 및 브릿지 절차는
+[AS121VRST 등록 안내](docs/AS121VRST-registration-ko.md)를 참고하십시오.
+
 ## 원본 Rethink 프로젝트
 
 The goal of this project is to de-cloud LG ThinQ-branded appliances, meaning to communicate with them without using the official LG app and cloud service.
