@@ -116,7 +116,8 @@ Home Assistant의 MQTT Discovery가 완료되면 LG 공기청정기 기기와 �
 ### 로그가 Alive만 반복함
 
 `Alive`는 연결 유지 패킷이다. 최초 연결 시 `DevInfo`가 한 번 수신됐다면 기본 연결은 완료된 상태다.
-Rethink는 연결 시 `Mon/Start`로 상태 구독을 시작하며 필터 정보는 `MFilter` 조회로 별도 수신한다.
+Rethink는 60초마다 `Mon/Start`로 상태를 한 번 받은 뒤 `Mon/Stop`으로 구독을 중단한다. 제어 후에도 같은
+단발 조회로 실제 상태를 보정하며 필터 정보는 최초 상태 확인 뒤 `MFilter` 조회로 별도 수신한다.
 
 ### 로그 공유 시 주의
 

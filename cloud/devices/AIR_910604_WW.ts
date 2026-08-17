@@ -23,6 +23,10 @@ const WIND_STRENGTH_VALUES: Record<string, string> = {
 
 const SLEEP_TIMER_OPTIONS = Object.keys(SLEEP_TIMER_VALUES)
 const WIND_STRENGTH_OPTIONS = Object.keys(WIND_STRENGTH_VALUES)
+const MONITOR_INTERVAL_MS = 60_000
+const MONITOR_TIMEOUT_MS = 10_000
+const CONTROL_REFRESH_DELAY_MS = 1_000
+const FILTER_QUERY_DELAY_MS = 1_000
 
 type FilterStatus = {
     RemainTime?: unknown
@@ -53,6 +57,14 @@ function nonNegativeNumber(raw: unknown): number | undefined {
 }
 
 export default class Device extends HADevice {
+    private started = false
+    private monitorInFlight = false
+    private filterRequested = false
+    private monitorInterval: NodeJS.Timeout | undefined
+    private monitorTimeout: NodeJS.Timeout | undefined
+    private refreshTimeout: NodeJS.Timeout | undefined
+    private filterTimeout: NodeJS.Timeout | undefined
+
     constructor(
         HA: Connection,
         readonly thinq: Thinq1Device,
@@ -160,8 +172,56 @@ export default class Device extends HADevice {
     }
 
     start() {
+        this.started = true
+        this.requestMonitorSnapshot()
+        this.monitorInterval = setInterval(() => this.requestMonitorSnapshot(), MONITOR_INTERVAL_MS)
+        this.monitorInterval.unref()
+    }
+
+    drop() {
+        this.started = false
+        if (this.monitorInterval) clearInterval(this.monitorInterval)
+        if (this.monitorTimeout) clearTimeout(this.monitorTimeout)
+        if (this.refreshTimeout) clearTimeout(this.refreshTimeout)
+        if (this.filterTimeout) clearTimeout(this.filterTimeout)
+        super.drop()
+    }
+
+    private requestMonitorSnapshot() {
+        if (!this.started || this.monitorInFlight) return
+        this.monitorInFlight = true
         this.thinq.send({ Cmd: 'Mon', CmdOpt: 'Start' })
-        this.thinq.send({ Cmd: 'Config', CmdOpt: 'Get', Value: 'MFilter', Data: 'bnVsbA==' })
+        this.monitorTimeout = setTimeout(() => this.finishMonitorSnapshot(), MONITOR_TIMEOUT_MS)
+        this.monitorTimeout.unref()
+    }
+
+    private finishMonitorSnapshot() {
+        if (!this.monitorInFlight) return
+        this.monitorInFlight = false
+        if (this.monitorTimeout) clearTimeout(this.monitorTimeout)
+        this.monitorTimeout = undefined
+        this.thinq.send({ Cmd: 'Mon', CmdOpt: 'Stop' })
+    }
+
+    private scheduleMonitorSnapshot(delay = CONTROL_REFRESH_DELAY_MS) {
+        if (!this.started) return
+        if (this.refreshTimeout) clearTimeout(this.refreshTimeout)
+        this.refreshTimeout = setTimeout(() => {
+            this.refreshTimeout = undefined
+            if (this.monitorInFlight) this.scheduleMonitorSnapshot()
+            else this.requestMonitorSnapshot()
+        }, delay)
+        this.refreshTimeout.unref()
+    }
+
+    private scheduleFilterQuery() {
+        if (this.filterRequested || !this.started) return
+        this.filterRequested = true
+        this.filterTimeout = setTimeout(() => {
+            this.filterTimeout = undefined
+            this.thinq.send({ Cmd: 'Config', CmdOpt: 'Get', Value: 'MFilter', Data: 'bnVsbA==' })
+        }, FILTER_QUERY_DELAY_MS)
+        this.filterTimeout.unref()
     }
 
     private readonly publishCache: Record<string, string | number> = {}
@@ -208,23 +268,34 @@ export default class Device extends HADevice {
             const value = nonNegativeNumber(status[field])
             if (value !== undefined) this.publishProperty(property, value)
         }
+
+        if (status.Operation === '0' || status.Operation === '1') {
+            this.finishMonitorSnapshot()
+            this.scheduleFilterQuery()
+        }
     }
 
     setProperty(prop: string, mqttValue: string) {
         if (prop === 'power' && (mqttValue === 'ON' || mqttValue === 'OFF')) {
             this.thinq.send({ Cmd: 'Control', CmdOpt: 'Operation', Value: mqttValue === 'ON' ? '1' : '0' })
+            this.publishProperty('power', mqttValue)
+            this.scheduleMonitorSnapshot()
         } else if (prop === 'air_fast' && (mqttValue === 'ON' || mqttValue === 'OFF')) {
             this.thinq.send({
                 Cmd: 'Control',
                 CmdOpt: 'Set',
                 Value: { AirFast: mqttValue === 'ON' ? '1' : '0' },
             })
+            this.publishProperty('air_fast', mqttValue)
+            this.scheduleMonitorSnapshot()
         } else if (prop === 'air_removal' && (mqttValue === 'ON' || mqttValue === 'OFF')) {
             this.thinq.send({
                 Cmd: 'Control',
                 CmdOpt: 'Set',
                 Value: { AirRemoval: mqttValue === 'ON' ? '1' : '0' },
             })
+            this.publishProperty('air_removal', mqttValue)
+            this.scheduleMonitorSnapshot()
         } else if (prop === 'sleep_timer' && SLEEP_TIMER_VALUES[mqttValue] !== undefined) {
             this.thinq.send({
                 Cmd: 'Control',
@@ -232,12 +303,16 @@ export default class Device extends HADevice {
                 Value: { SleepTime: SLEEP_TIMER_VALUES[mqttValue] },
                 Data: 'bnVsbA==',
             })
+            this.publishProperty('sleep_timer', mqttValue)
+            this.scheduleMonitorSnapshot()
         } else if (prop === 'wind_strength' && WIND_STRENGTH_VALUES[mqttValue] !== undefined) {
             this.thinq.send({
                 Cmd: 'Control',
                 CmdOpt: 'Set',
                 Value: { WindStrength: WIND_STRENGTH_VALUES[mqttValue] },
             })
+            this.publishProperty('wind_strength', mqttValue)
+            this.scheduleMonitorSnapshot()
         }
     }
 }

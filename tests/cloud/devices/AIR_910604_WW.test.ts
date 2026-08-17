@@ -39,19 +39,36 @@ describe(MODEL_ID, () => {
         assert.equal(components.pm25.unit_of_measurement, 'µg/m³')
     })
 
-    test('start subscribes to monitor state and requests MFilter status', () => {
+    test('start requests only a monitor snapshot initially', () => {
         const { thinq, dev } = makeDevice()
         dev.start()
+        assert.deepEqual(thinq.sent, [{ Cmd: 'Mon', CmdOpt: 'Start' }])
+        dev.drop()
+    })
+
+    test('first monitor state stops the stream and then requests MFilter sequentially', async () => {
+        const { thinq, dev } = makeDevice()
+        dev.start()
+        thinq.emit('data', Buffer.from('{"Operation":"1"}'))
         assert.deepEqual(thinq.sent, [
             { Cmd: 'Mon', CmdOpt: 'Start' },
+            { Cmd: 'Mon', CmdOpt: 'Stop' },
+        ])
+        await new Promise((resolve) => setTimeout(resolve, 1_050))
+        assert.deepEqual(thinq.sent, [
+            { Cmd: 'Mon', CmdOpt: 'Start' },
+            { Cmd: 'Mon', CmdOpt: 'Stop' },
             { Cmd: 'Config', CmdOpt: 'Get', Value: 'MFilter', Data: 'bnVsbA==' },
         ])
+        dev.drop()
     })
 
     test('power commands use confirmed Operation values', () => {
-        const { thinq, dev } = makeDevice()
+        const { ha, thinq, dev } = makeDevice()
         dev.setProperty('power', 'OFF')
+        assert.equal(ha.devices[DEVICE_ID].properties.power, 'OFF')
         dev.setProperty('power', 'ON')
+        assert.equal(ha.devices[DEVICE_ID].properties.power, 'ON')
         assert.deepEqual(thinq.sent, [
             { Cmd: 'Control', CmdOpt: 'Operation', Value: '0' },
             { Cmd: 'Control', CmdOpt: 'Operation', Value: '1' },
@@ -59,11 +76,13 @@ describe(MODEL_ID, () => {
     })
 
     test('fast and sterilization switches use confirmed Set values', () => {
-        const { thinq, dev } = makeDevice()
+        const { ha, thinq, dev } = makeDevice()
         dev.setProperty('air_fast', 'ON')
         dev.setProperty('air_fast', 'OFF')
         dev.setProperty('air_removal', 'ON')
         dev.setProperty('air_removal', 'OFF')
+        assert.equal(ha.devices[DEVICE_ID].properties.air_fast, 'OFF')
+        assert.equal(ha.devices[DEVICE_ID].properties.air_removal, 'OFF')
         assert.deepEqual(thinq.sent, [
             { Cmd: 'Control', CmdOpt: 'Set', Value: { AirFast: '1' } },
             { Cmd: 'Control', CmdOpt: 'Set', Value: { AirFast: '0' } },
@@ -112,6 +131,25 @@ describe(MODEL_ID, () => {
             pm25: 9,
             pm10: 10,
         })
+    })
+
+    test('a control started after initialization schedules a one-shot state reconciliation', async () => {
+        const { thinq, dev } = makeDevice()
+        dev.start()
+        thinq.emit('data', Buffer.from('{"Operation":"1"}'))
+        await new Promise((resolve) => setTimeout(resolve, 1_050))
+        thinq.resetRecorder()
+
+        dev.setProperty('air_fast', 'ON')
+        assert.deepEqual(thinq.sent, [{ Cmd: 'Control', CmdOpt: 'Set', Value: { AirFast: '1' } }])
+        await new Promise((resolve) => setTimeout(resolve, 1_050))
+        assert.deepEqual(thinq.sent, [
+            { Cmd: 'Control', CmdOpt: 'Set', Value: { AirFast: '1' } },
+            { Cmd: 'Mon', CmdOpt: 'Start' },
+        ])
+        thinq.emit('data', Buffer.from('{"Operation":"1","AirFast":"1"}'))
+        assert.deepEqual(thinq.sent.at(-1), { Cmd: 'Mon', CmdOpt: 'Stop' })
+        dev.drop()
     })
 
     test('MFilter response publishes remaining hours and percentage', () => {
