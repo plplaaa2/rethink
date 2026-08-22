@@ -37,6 +37,8 @@ describe('2RES2VE300UA2', () => {
             'door_open_duration_today',
             'door_open_warning',
             'fresh_air_filter',
+            'fridge_temperature_status',
+            'freezer_temperature_status',
             'display_lock_status',
             'smart_care',
             'night_glare_mode',
@@ -146,6 +148,22 @@ describe('2RES2VE300UA2', () => {
             processStatus(status)
             assert.equal(ha.devices[DEVICE_ID].properties.display_lock_status, raw)
         }
+    })
+
+    test('publishes provisional refrigerator and freezer temperature-maintenance states', () => {
+        const { ha, dev } = makeDevice()
+        const processStatus = (dev as unknown as { processStatus: (status: Buffer) => void }).processStatus.bind(dev)
+        const status = Buffer.alloc(68, 0xff)
+
+        status[27] = 3
+        status[28] = 1
+        processStatus(status)
+        assert.equal(ha.devices[DEVICE_ID].properties.fridge_temperature_status, '설정온도보다 높음/냉각 중')
+        assert.equal(ha.devices[DEVICE_ID].properties.freezer_temperature_status, '정상')
+
+        status[27] = 9
+        processStatus(status)
+        assert.equal(ha.devices[DEVICE_ID].properties.fridge_temperature_status, '알 수 없음 (9)')
     })
 
     test('maps observed and shared Pure N Fresh status values without hiding unknown raw values', () => {

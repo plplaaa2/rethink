@@ -28,6 +28,12 @@ function freshAirFilterState(raw: number) {
     return states[raw] ?? `알 수 없음 (${raw})`
 }
 
+function temperatureMaintenanceState(raw: number) {
+    if (raw === 1) return '정상'
+    if (raw === 3) return '설정온도보다 높음/냉각 중'
+    return `알 수 없음 (${raw})`
+}
+
 type DoorStats = {
     date: string
     count: number
@@ -290,6 +296,20 @@ export default class Device extends AABBDevice {
                         name: 'Pure N Fresh 상태',
                         icon: 'mdi:air-filter',
                     },
+                    fridge_temperature_status: {
+                        platform: 'sensor',
+                        unique_id: '$deviceid-fridge-temperature-status',
+                        state_topic: '$this/fridge_temperature_status',
+                        name: '냉장실 온도 유지 상태',
+                        icon: 'mdi:fridge-alert-outline',
+                    },
+                    freezer_temperature_status: {
+                        platform: 'sensor',
+                        unique_id: '$deviceid-freezer-temperature-status',
+                        state_topic: '$this/freezer_temperature_status',
+                        name: '냉동실 온도 유지 상태',
+                        icon: 'mdi:snowflake-alert',
+                    },
                     display_lock_status: {
                         platform: 'sensor',
                         unique_id: '$deviceid-display-lock-status',
@@ -440,6 +460,8 @@ export default class Device extends AABBDevice {
         this.publishProperty('express_cool', rec[16] === 1 ? 'ON' : 'OFF')
         this.processDoor(rec[7] === 1)
         this.publishProperty('fresh_air_filter', freshAirFilterState(rec[4]))
+        this.publishProperty('fridge_temperature_status', temperatureMaintenanceState(rec[27]))
+        this.publishProperty('freezer_temperature_status', temperatureMaintenanceState(rec[28]))
         this.publishProperty('display_lock_status', rec[10])
         this.publishProperty('smart_care', rec[17] === 1 ? 'ON' : 'OFF')
         this.nightGlareMode = rec[30] === 2 ? '일출/일몰' : rec[30] === 3 ? '사용자' : '비활성'
