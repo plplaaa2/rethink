@@ -199,18 +199,18 @@ describe('2RES2VE300UA2', () => {
 
         const properties = ha.devices[DEVICE_ID].properties
         assert.equal(properties.energy_current_hour, 64)
-        assert.equal(properties.energy_today, 0.064)
-        assert.equal(properties.energy_month, 0.064)
-        assert.equal(properties.energy_total, 0.064)
+        assert.equal(properties.energy_today, 0.06)
+        assert.equal(properties.energy_month, 0.06)
+        assert.equal(properties.energy_total, 0.06)
     })
 
     test('decodes the captured 10AF interval value as big-endian Wh', () => {
         const { ha, thinq } = makeDevice()
         thinq.emit('data', buf('AA0910AF0F0021F7BB'))
         assert.equal(ha.devices[DEVICE_ID].properties.energy_current_hour, 33)
-        assert.equal(ha.devices[DEVICE_ID].properties.energy_today, 0.033)
-        assert.equal(ha.devices[DEVICE_ID].properties.energy_month, 0.033)
-        assert.equal(ha.devices[DEVICE_ID].properties.energy_total, 0.033)
+        assert.equal(ha.devices[DEVICE_ID].properties.energy_today, 0.03)
+        assert.equal(ha.devices[DEVICE_ID].properties.energy_month, 0.03)
+        assert.equal(ha.devices[DEVICE_ID].properties.energy_total, 0.03)
     })
 
     test('accepts the captured 10AF subtype 10 interval report', () => {
@@ -231,9 +231,9 @@ describe('2RES2VE300UA2', () => {
         processEnergy(33, Date.parse('2026-07-31T15:13:00Z'))
         const properties = ha.devices[DEVICE_ID].properties
         assert.equal(properties.energy_current_hour, 33)
-        assert.equal(properties.energy_today, 0.033)
-        assert.equal(properties.energy_month, 0.033)
-        assert.equal(properties.energy_total, 0.064)
+        assert.equal(properties.energy_today, 0.03)
+        assert.equal(properties.energy_month, 0.03)
+        assert.equal(properties.energy_total, 0.06)
     })
 
     test('migrates the saved current-month energy to the lifetime total baseline', () => {

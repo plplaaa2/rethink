@@ -577,9 +577,9 @@ export default class Device extends AABBDevice {
 
     private publishEnergyStats() {
         this.publishProperty('energy_current_hour', this.energyStats.hourWh)
-        this.publishProperty('energy_today', Number((this.energyStats.dayWh / 1000).toFixed(3)))
-        this.publishProperty('energy_month', Number((this.energyStats.monthWh / 1000).toFixed(3)))
-        this.publishProperty('energy_total', Number((this.energyStats.totalWh / 1000).toFixed(3)))
+        this.publishProperty('energy_today', Number((this.energyStats.dayWh / 1000).toFixed(2)))
+        this.publishProperty('energy_month', Number((this.energyStats.monthWh / 1000).toFixed(2)))
+        this.publishProperty('energy_total', Number((this.energyStats.totalWh / 1000).toFixed(2)))
     }
 
     private processEnergyInterval(intervalWh: number, now = Date.now()) {
