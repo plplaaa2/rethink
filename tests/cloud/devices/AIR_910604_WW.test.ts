@@ -45,6 +45,9 @@ describe(MODEL_ID, () => {
         assert.deepEqual(components.sensor_monitoring.options, ['Only while operating', 'Always'])
         assert.equal(components.sensor_monitoring.entity_category, 'config')
         assert.equal(components.tvoc.icon, 'mdi:scent')
+        assert.equal(components.filter_remaining_time.entity_category, 'diagnostic')
+        assert.equal(components.filter_remaining.entity_category, 'diagnostic')
+        assert.equal(ha.devices[DEVICE_ID].config!.device.sw_version, META.swVersion)
     })
 
     test('start requests only a monitor snapshot initially', () => {

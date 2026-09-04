@@ -184,6 +184,7 @@ export default class Device extends HADevice {
                         unit_of_measurement: 'h',
                         device_class: 'duration',
                         state_class: 'measurement',
+                        entity_category: 'diagnostic',
                     },
                     filter_remaining: {
                         platform: 'sensor',
@@ -193,6 +194,7 @@ export default class Device extends HADevice {
                         icon: 'mdi:air-filter',
                         unit_of_measurement: '%',
                         state_class: 'measurement',
+                        entity_category: 'diagnostic',
                     },
                 },
             }),

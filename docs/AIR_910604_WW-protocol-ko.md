@@ -96,6 +96,9 @@ Home Assistant에서는 `Operation` 전원과 `WindStrength` 네 단계를 하�
 - `ChangePeriod`: 필터 교체 주기
 - 잔여율: `RemainTime / ChangePeriod * 100`
 
+Home Assistant에서는 필터 잔여 시간과 잔여율을 `diagnostic` 엔티티로 분류한다. 기기 정보에는
+메타데이터의 펌웨어 버전(`sw_version`)을 표시한다.
+
 ## 미확인 항목
 
 다음 필드는 상태 JSON에서 발견했지만 의미나 값의 동작을 충분히 검증하지 못했으므로 아직 노출하지
