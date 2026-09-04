@@ -138,7 +138,7 @@ describe(MODEL_ID, () => {
             pm1: 8,
             pm25: 9,
             pm10: 10,
-            tvoc: 'Bad',
+            tvoc: 'Normal',
             sensor_monitoring: 'Always',
         })
     })
