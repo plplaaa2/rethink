@@ -53,19 +53,31 @@ Data 없는 `ReturnCode: "0000"`을 받으면 바로 스냅샷을 시작해 실�
 Home Assistant에서는 `Operation` 전원과 `WindStrength` 네 단계를 하나의 Fan 엔티티로 제공하며,
 풍속은 Low, Medium, High, Auto 프리셋으로 선택한다.
 
-| 필드           | 의미                      |
-| -------------- | ------------------------- |
-| `Operation`    | 전원: `0` 끔, `1` 켬      |
-| `WindStrength` | 풍속: `2`, `4`, `6`, `8`  |
-| `SleepTime`    | 취침 예약 분              |
-| `AirFast`      | 쾌속 모드: `0` 끔, `1` 켬 |
-| `AirRemoval`   | 공기 제균: `0` 끔, `1` 켬 |
-| `SensorPM1`    | PM1.0, `µg/m³`            |
-| `SensorPM2`    | PM2.5, `µg/m³`            |
-| `SensorPM10`   | PM10, `µg/m³`             |
+| 필드           | 의미                                                        |
+| -------------- | ----------------------------------------------------------- |
+| `Operation`    | 전원: `0` 끔, `1` 켬                                        |
+| `WindStrength` | 풍속: `2`, `4`, `6`, `8`                                    |
+| `SleepTime`    | 취침 예약 분                                                |
+| `AirFast`      | 쾌속 모드: `0` 끔, `1` 켬                                   |
+| `AirRemoval`   | 공기 제균: `0` 끔, `1` 켬                                   |
+| `SensorPM1`    | PM1.0, `µg/m³`                                              |
+| `SensorPM2`    | PM2.5, `µg/m³`                                              |
+| `SensorPM10`   | PM10, `µg/m³`                                               |
+| `AirPolution`  | TVOC/냄새 등급: `0` Good, `1` Normal, `2` Bad, `3` Very Bad |
+| `SensorMon`    | 센서 측정 방식: `0` Only while operating, `1` Always        |
 
 같은 상태 패킷에는 여러 LG 제품군이 공유하는 미지원 필드도 다수 포함된다. 값이 `NS` 또는 고정된 `0`인
 온도·온수·가습·풍향 필드는 AS121VRST에서 검증되지 않았으므로 Home Assistant에 노출하지 않는다.
+
+`AirPolution`은 앱의 냄새 4단계 표시와 대조하여 TVOC 등급으로 기록한다. Rethink에서는 이를
+`TVOC` 센서로 노출하고 위 등급명을 상태 텍스트로 사용한다. `SensorMon`은 다음과 같이 설정한다.
+
+```json
+{ "Cmd": "Config", "CmdOpt": "Set", "Value": "SensorMon", "Data": "eyJTZW5zb3JNb24iOiIxIn0=" }
+```
+
+위 패킷의 Data는 `{ "SensorMon": "1" }`의 Base64 표현이며 `"0"`은 운전 중에만,
+`"1"`은 항상 측정을 의미한다.
 
 ## 필터 조회
 
@@ -85,6 +97,18 @@ Home Assistant에서는 `Operation` 전원과 `WindStrength` 네 단계를 하�
 
 ## 미확인 항목
 
-`AirPollution`은 냄새 오염도이며 값 `2`가 보통인 것은 확인됐다. 나머지 단계, `TotalAirPollution`,
-`OpMode`, `DiagCode`, 예약 상태의 세부 의미와 스마트 진단용 별도 프로토콜은 아직 확인되지 않아
-노출하지 않는다. 일반 모니터링 상태에는 팬 RPM이 포함되지 않는다.
+다음 필드는 상태 JSON에서 발견했지만 의미나 값의 동작을 충분히 검증하지 못했으므로 아직 노출하지
+않는다.
+
+| 필드                            | 현재 판단                                                                            |
+| ------------------------------- | ------------------------------------------------------------------------------------ |
+| `AirMonitoring`                 | 에어 모니터링 기능 상태 또는 지원 여부 후보. `SensorMon`과 별도 필드이며 의미 미확정 |
+| `TotalAirPolution`              | 종합 공기질/오염도 후보. `AirPolution`과의 관계 미확정                               |
+| `DisplayControl`                | 디스플레이 표시 설정 후보. 앱에 조작 기능이 없어 값 의미 미확정                      |
+| `SignalLighting`                | 상태·공기질 표시등 설정 후보. 값 의미 미확정                                         |
+| `WatertankLight`                | 물탱크 조명 설정 후보. 값 의미 미확정                                                |
+| `SensorHumidity`, `HumidityCfg` | 습도 측정값·설정 후보. 현재 값과 단위 검증 부족                                      |
+| `OpMode`, `DiagCode`            | 운전 모드·진단 코드 후보. 세부 의미 미확정                                           |
+
+일반 모니터링 상태에는 팬 RPM이 포함되지 않는다. 앱에 없는 필드는 실제 기기 반응과 추가 캡처로
+검증하기 전까지 구현하지 않는다.
