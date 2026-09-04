@@ -28,7 +28,7 @@ const SENSOR_MON_VALUES: Record<string, string> = {
     'Only while operating': '0',
     Always: '1',
 }
-const TVOC_LEVELS: Record<string, string> = { '0': 'Good', '1': 'Normal', '2': 'Bad', '3': 'Very Bad' }
+const TVOC_LEVELS: Record<string, string> = { '0': 'Good', '1': 'Weak', '2': 'Bad', '3': 'Very Bad' }
 const SENSOR_MON_OPTIONS = Object.keys(SENSOR_MON_VALUES)
 const MONITOR_ON_INTERVAL_MS = 60_000
 const MONITOR_OFF_INTERVAL_MS = 5 * 60_000
