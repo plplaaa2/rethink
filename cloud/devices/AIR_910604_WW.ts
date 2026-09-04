@@ -24,6 +24,12 @@ const WIND_STRENGTH_VALUES: Record<string, string> = {
 
 const SLEEP_TIMER_OPTIONS = Object.keys(SLEEP_TIMER_VALUES)
 const WIND_STRENGTH_OPTIONS = Object.keys(WIND_STRENGTH_VALUES)
+const SENSOR_MON_VALUES: Record<string, string> = {
+    'Only while operating': '0',
+    Always: '1',
+}
+const TVOC_LEVELS: Record<string, string> = { '0': 'Good', '1': 'Normal', '2': 'Bad', '3': 'Very Bad' }
+const SENSOR_MON_OPTIONS = Object.keys(SENSOR_MON_VALUES)
 const MONITOR_ON_INTERVAL_MS = 60_000
 const MONITOR_OFF_INTERVAL_MS = 5 * 60_000
 const MONITOR_TIMEOUT_MS = 10_000
@@ -43,6 +49,8 @@ type MonitorStatus = {
     SensorPM1?: unknown
     SensorPM2?: unknown
     SensorPM10?: unknown
+    AirPolution?: unknown
+    SensorMon?: unknown
     AirFast?: unknown
     AirRemoval?: unknown
 }
@@ -117,6 +125,16 @@ export default class Device extends HADevice {
                         icon: 'mdi:timer-sand',
                         entity_category: 'config',
                     },
+                    sensor_monitoring: {
+                        platform: 'select',
+                        unique_id: '$deviceid-sensor-monitoring',
+                        state_topic: '$this/sensor_monitoring',
+                        command_topic: '$this/sensor_monitoring/set',
+                        options: SENSOR_MON_OPTIONS,
+                        name: 'Sensor monitoring',
+                        icon: 'mdi:cog-box',
+                        entity_category: 'config',
+                    },
                     pm1: {
                         platform: 'sensor',
                         unique_id: '$deviceid-pm1',
@@ -143,6 +161,13 @@ export default class Device extends HADevice {
                         icon: 'mdi:blur',
                         unit_of_measurement: 'µg/m³',
                         state_class: 'measurement',
+                    },
+                    tvoc: {
+                        platform: 'sensor',
+                        unique_id: '$deviceid-tvoc',
+                        state_topic: '$this/tvoc',
+                        name: 'TVOC',
+                        icon: 'mdi:scent',
                     },
                     filter_remaining_time: {
                         platform: 'sensor',
@@ -290,6 +315,11 @@ export default class Device extends HADevice {
             if (value !== undefined) this.publishProperty(property, value)
         }
 
+        const tvoc = typeof status.AirPolution === 'string' ? TVOC_LEVELS[status.AirPolution] : undefined
+        if (tvoc) this.publishProperty('tvoc', tvoc)
+        const sensorMonitoring = optionForValue(SENSOR_MON_VALUES, status.SensorMon)
+        if (sensorMonitoring) this.publishProperty('sensor_monitoring', sensorMonitoring)
+
         if (status.Operation === '0' || status.Operation === '1') {
             this.finishMonitorSnapshot()
             this.scheduleFilterQuery()
@@ -333,6 +363,16 @@ export default class Device extends HADevice {
                 Value: { WindStrength: WIND_STRENGTH_VALUES[mqttValue] },
             })
             this.publishProperty('wind_strength', mqttValue)
+            this.scheduleMonitorSnapshot()
+        } else if (prop === 'sensor_monitoring' && SENSOR_MON_VALUES[mqttValue] !== undefined) {
+            const value = SENSOR_MON_VALUES[mqttValue]
+            this.thinq.send({
+                Cmd: 'Config',
+                CmdOpt: 'Set',
+                Value: 'SensorMon',
+                Data: Buffer.from(JSON.stringify({ SensorMon: value }), 'utf-8').toString('base64'),
+            })
+            this.publishProperty('sensor_monitoring', mqttValue)
             this.scheduleMonitorSnapshot()
         }
     }

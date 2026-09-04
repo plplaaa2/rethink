@@ -26,9 +26,11 @@ describe(MODEL_ID, () => {
             'air_fast',
             'air_removal',
             'sleep_timer',
+            'sensor_monitoring',
             'pm1',
             'pm25',
             'pm10',
+            'tvoc',
             'filter_remaining_time',
             'filter_remaining',
         ])
@@ -40,6 +42,9 @@ describe(MODEL_ID, () => {
         assert.equal(components.fan.preset_mode_state_topic, '$this/wind_strength')
         assert.equal(components.fan.preset_mode_command_topic, '$this/wind_strength/set')
         assert.equal(components.pm25.unit_of_measurement, 'µg/m³')
+        assert.deepEqual(components.sensor_monitoring.options, ['Only while operating', 'Always'])
+        assert.equal(components.sensor_monitoring.entity_category, 'config')
+        assert.equal(components.tvoc.icon, 'mdi:scent')
     })
 
     test('start requests only a monitor snapshot initially', () => {
@@ -116,12 +121,12 @@ describe(MODEL_ID, () => {
         ])
     })
 
-    test('monitor response publishes real control state, fan speed, and particulate matter', () => {
+    test('monitor response publishes real control state, fan speed, particulate matter, and TVOC level', () => {
         const { ha, thinq } = makeDevice()
         thinq.emit(
             'data',
             Buffer.from(
-                '{"Operation":"1","WindStrength":"4","SleepTime":"120","SensorPM1":"8","SensorPM2":"9","SensorPM10":"10","AirFast":"1","AirRemoval":"0"}',
+                '{"Operation":"1","WindStrength":"4","SleepTime":"120","SensorPM1":"8","SensorPM2":"9","SensorPM10":"10","AirPolution":"2","SensorMon":"1","AirFast":"1","AirRemoval":"0"}',
             ),
         )
         assert.deepEqual(ha.devices[DEVICE_ID].properties, {
@@ -133,7 +138,20 @@ describe(MODEL_ID, () => {
             pm1: 8,
             pm25: 9,
             pm10: 10,
+            tvoc: 'Bad',
+            sensor_monitoring: 'Always',
         })
+    })
+
+    test('sensor monitoring sends confirmed Config Set values', () => {
+        const { ha, thinq, dev } = makeDevice()
+        dev.setProperty('sensor_monitoring', 'Always')
+        dev.setProperty('sensor_monitoring', 'Only while operating')
+        assert.deepEqual(thinq.sent, [
+            { Cmd: 'Config', CmdOpt: 'Set', Value: 'SensorMon', Data: 'eyJTZW5zb3JNb24iOiIxIn0=' },
+            { Cmd: 'Config', CmdOpt: 'Set', Value: 'SensorMon', Data: 'eyJTZW5zb3JNb24iOiIwIn0=' },
+        ])
+        assert.equal(ha.devices[DEVICE_ID].properties.sensor_monitoring, 'Only while operating')
     })
 
     test('an ACK-only response after control starts immediate one-shot state reconciliation', async () => {
