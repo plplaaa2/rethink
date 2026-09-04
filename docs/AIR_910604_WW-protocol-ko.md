@@ -53,23 +53,24 @@ Data 없는 `ReturnCode: "0000"`을 받으면 바로 스냅샷을 시작해 실�
 Home Assistant에서는 `Operation` 전원과 `WindStrength` 네 단계를 하나의 Fan 엔티티로 제공하며,
 풍속은 Low, Medium, High, Auto 프리셋으로 선택한다.
 
-| 필드           | 의미                                                      |
-| -------------- | --------------------------------------------------------- |
-| `Operation`    | 전원: `0` 끔, `1` 켬                                      |
-| `WindStrength` | 풍속: `2`, `4`, `6`, `8`                                  |
-| `SleepTime`    | 취침 예약 분                                              |
-| `AirFast`      | 쾌속 모드: `0` 끔, `1` 켬                                 |
-| `AirRemoval`   | 공기 제균: `0` 끔, `1` 켬                                 |
-| `SensorPM1`    | PM1.0, `µg/m³`                                            |
-| `SensorPM2`    | PM2.5, `µg/m³`                                            |
-| `SensorPM10`   | PM10, `µg/m³`                                             |
-| `AirPolution`  | TVOC/냄새 등급: `0` Good, `1` Weak, `2` Bad, `3` Very Bad |
-| `SensorMon`    | 센서 측정 방식: `0` Only while operating, `1` Always      |
+| 필드           | 의미                                                                                 |
+| -------------- | ------------------------------------------------------------------------------------ |
+| `Operation`    | 전원: `0` 끔, `1` 켬                                                                 |
+| `WindStrength` | 풍속: `2`, `4`, `6`, `8`                                                             |
+| `SleepTime`    | 취침 예약 분                                                                         |
+| `AirFast`      | 쾌속 모드: `0` 끔, `1` 켬                                                            |
+| `AirRemoval`   | 공기 제균: `0` 끔, `1` 켬                                                            |
+| `SensorPM1`    | PM1.0, `µg/m³`                                                                       |
+| `SensorPM2`    | PM2.5, `µg/m³`                                                                       |
+| `SensorPM10`   | PM10, `µg/m³`                                                                        |
+| `AirPolution`  | TVOC/냄새 등급: `0` Measuring / Unknown, `1` Good, `2` Normal, `3` Bad, `4` Very Bad |
+| `SensorMon`    | 센서 측정 방식: `0` Only while operating, `1` Always                                 |
 
 같은 상태 패킷에는 여러 LG 제품군이 공유하는 미지원 필드도 다수 포함된다. 값이 `NS` 또는 고정된 `0`인
 온도·온수·가습·풍향 필드는 AS121VRST에서 검증되지 않았으므로 Home Assistant에 노출하지 않는다.
 
-`AirPolution`은 앱의 냄새 단계 표시와 대조하여 TVOC 등급으로 기록한다. Rethink에서는 이를
+`AirPolution`은 앱의 냄새 단계 표시와 대조하여 TVOC 등급으로 기록한다. 앱의 파란색 `약함`은
+정상 상태인 `Good`으로 해석한다. `0`은 측정 중 또는 미확인 상태로 기록한다. Rethink에서는 이를
 `TVOC` 센서로 노출하고 위 등급명을 상태 텍스트로 사용한다. `SensorMon`은 다음과 같이 설정한다.
 
 ```json

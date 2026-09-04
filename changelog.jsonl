@@ -63,3 +63,5 @@
 {"version":"dev-0.1.62","date":"2026-09-04","changes":["Added the confirmed AIR_910604_WW TVOC sensor with Good, Normal, Bad, and Very Bad text levels","Added the confirmed SensorMon monitoring-mode selector with Only while operating and Always options","Added confirmed SensorMon Config Set commands and assigned scent and cog-box icons"]}
 {"version":"dev-0.1.63","date":"2026-09-04","changes":["Documented the confirmed AIR_910604_WW TVOC and SensorMon mappings and Config Set example","Documented discovered but unimplemented air-monitoring, display, lighting, humidity, and diagnostic fields"]}
 {"version":"dev-0.1.64","date":"2026-09-04","changes":["Corrected AIR_910604_WW AirPolution value 1 from Normal to Weak to match the LG app display"]}
+{"version":"dev-0.1.65","date":"2026-09-04","changes":["Corrected AIR_910604_WW AirPolution mapping so value 1 is Good and value 0 is Measuring / Unknown"]}
+{"version":"dev-0.1.66","date":"2026-09-04","changes":["Mapped AIR_910604_WW TVOC levels 1 through 4 to Good, Normal, Bad, and Very Bad while reserving 0 for Measuring / Unknown"]}
