@@ -63,13 +63,14 @@ export class Device extends TypedEmitter<DeviceEvents> {
     }
 
     send(body: object) {
-        this.emit('sendData', body)
+        const command = {
+            ...body,
+            CmdWId: `n-${randomUUID()}`,
+        }
+        this.emit('sendData', command)
         this.activeConnection?.json({
             Header: { 'x-lgedm-deviceId': this.id },
-            Body: {
-                ...body,
-                CmdWId: `n-${randomUUID()}`,
-            },
+            Body: command,
         })
     }
 }

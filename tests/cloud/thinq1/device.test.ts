@@ -61,6 +61,25 @@ test('parallel connections share one device without duplicating outbound command
     assert.equal(closes, 1)
 })
 
+test('sendData exposes the same CmdWId that is sent on the wire', () => {
+    const connection = new MockConnection()
+    const device = new Device(connection as never, 'device-id', {
+        modelId: 'model',
+        modelName: 'model',
+        swVersion: 'version',
+    })
+    let monitored: Record<string, unknown> | undefined
+    device.on('sendData', (body) => {
+        monitored = body as Record<string, unknown>
+    })
+
+    device.send({ Cmd: 'Control', CmdOpt: 'Operation', Value: '1' })
+
+    assert.match(String(monitored?.CmdWId), /^n-[0-9a-f-]+$/)
+    const wireBody = (connection.sent[0] as { Body: Record<string, unknown> }).Body
+    assert.equal(wireBody.CmdWId, monitored?.CmdWId)
+})
+
 test('acceptor keeps parallel sockets for one device instead of reconnecting them', async () => {
     const acceptor = new DeviceAcceptor(() => ({
         deviceType: '401',
