@@ -192,14 +192,14 @@ export default class Device extends HADevice {
                         state_class: 'measurement',
                     },
                     pm25_grade: {
-                        platform: 'text',
+                        platform: 'sensor',
                         unique_id: '$deviceid-pm25-grade',
                         state_topic: '$this/pm25_grade',
                         name: 'PM2.5 Grade',
                         icon: 'mdi:blur-linear',
                     },
                     pm10_grade: {
-                        platform: 'text',
+                        platform: 'sensor',
                         unique_id: '$deviceid-pm10-grade',
                         state_topic: '$this/pm10_grade',
                         name: 'PM10 Grade',
