@@ -30,6 +30,8 @@ describe(MODEL_ID, () => {
             'pm1',
             'pm25',
             'pm10',
+            'pm25_grade',
+            'pm10_grade',
             'tvoc',
             'filter_remaining_time',
             'filter_remaining',
@@ -42,6 +44,10 @@ describe(MODEL_ID, () => {
         assert.equal(components.fan.preset_mode_state_topic, '$this/wind_strength')
         assert.equal(components.fan.preset_mode_command_topic, '$this/wind_strength/set')
         assert.equal(components.pm25.unit_of_measurement, 'µg/m³')
+        assert.equal(components.pm25_grade.platform, 'text')
+        assert.equal(components.pm25_grade.state_topic, '$this/pm25_grade')
+        assert.equal(components.pm10_grade.platform, 'text')
+        assert.equal(components.pm10_grade.state_topic, '$this/pm10_grade')
         assert.deepEqual(components.sensor_monitoring.options, ['Only while operating', 'Always'])
         assert.equal(components.sensor_monitoring.entity_category, 'config')
         assert.equal(components.tvoc.icon, 'mdi:scent')
@@ -141,9 +147,25 @@ describe(MODEL_ID, () => {
             pm1: 8,
             pm25: 9,
             pm10: 10,
+            pm25_grade: '좋음',
+            pm10_grade: '쾌적',
             tvoc: 'Normal',
             sensor_monitoring: 'Always',
         })
+    })
+
+    test('particulate grades use inclusive thresholds and classify overflow as worst', () => {
+        const { ha, thinq } = makeDevice()
+        for (const [pm25, pm10, expectedPm25, expectedPm10] of [
+            [8, 15, '쾌적', '쾌적'],
+            [9, 16, '좋음', '좋음'],
+            [75, 150, '아주나쁨', '아주나쁨'],
+            [76, 151, '최악', '최악'],
+        ] as const) {
+            thinq.emit('data', Buffer.from(`{"SensorPM2":"${pm25}","SensorPM10":"${pm10}"}`))
+            assert.equal(ha.devices[DEVICE_ID].properties.pm25_grade, expectedPm25)
+            assert.equal(ha.devices[DEVICE_ID].properties.pm10_grade, expectedPm10)
+        }
     })
 
     test('sensor monitoring sends confirmed Config Set values', () => {

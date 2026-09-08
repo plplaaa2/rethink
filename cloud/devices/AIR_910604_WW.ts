@@ -35,6 +35,24 @@ const TVOC_LEVELS: Record<string, string> = {
     '3': 'Bad',
     '4': 'Very Bad',
 }
+const PM25_GRADES = [
+    [8, '쾌적'],
+    [15, '좋음'],
+    [20, '양호'],
+    [25, '보통'],
+    [37, '나쁨'],
+    [50, '매우나쁨'],
+    [75, '아주나쁨'],
+] as const
+const PM10_GRADES = [
+    [15, '쾌적'],
+    [30, '좋음'],
+    [40, '양호'],
+    [50, '보통'],
+    [75, '나쁨'],
+    [100, '매우나쁨'],
+    [150, '아주나쁨'],
+] as const
 const SENSOR_MON_OPTIONS = Object.keys(SENSOR_MON_VALUES)
 const MONITOR_ON_INTERVAL_MS = 60_000
 const MONITOR_OFF_INTERVAL_MS = 5 * 60_000
@@ -71,6 +89,11 @@ function nonNegativeNumber(raw: unknown): number | undefined {
     const value = Number(raw)
     if (!Number.isFinite(value) || value < 0) return
     return value
+}
+
+// Derives Korean particulate-matter grades from the thresholds used by the user's reference device.
+function particulateGrade(value: number, thresholds: readonly (readonly [number, string])[]): string {
+    return thresholds.find(([maximum]) => value <= maximum)?.[1] ?? '최악'
 }
 
 export default class Device extends HADevice {
@@ -167,6 +190,20 @@ export default class Device extends HADevice {
                         icon: 'mdi:blur',
                         unit_of_measurement: 'µg/m³',
                         state_class: 'measurement',
+                    },
+                    pm25_grade: {
+                        platform: 'text',
+                        unique_id: '$deviceid-pm25-grade',
+                        state_topic: '$this/pm25_grade',
+                        name: 'PM2.5 Grade',
+                        icon: 'mdi:blur-linear',
+                    },
+                    pm10_grade: {
+                        platform: 'text',
+                        unique_id: '$deviceid-pm10-grade',
+                        state_topic: '$this/pm10_grade',
+                        name: 'PM10 Grade',
+                        icon: 'mdi:blur',
                     },
                     tvoc: {
                         platform: 'sensor',
@@ -320,7 +357,11 @@ export default class Device extends HADevice {
             ['SensorPM10', 'pm10'],
         ] as const) {
             const value = nonNegativeNumber(status[field])
-            if (value !== undefined) this.publishProperty(property, value)
+            if (value !== undefined) {
+                this.publishProperty(property, value)
+                if (property === 'pm25') this.publishProperty('pm25_grade', particulateGrade(value, PM25_GRADES))
+                if (property === 'pm10') this.publishProperty('pm10_grade', particulateGrade(value, PM10_GRADES))
+            }
         }
 
         const tvoc = typeof status.AirPolution === 'string' ? TVOC_LEVELS[status.AirPolution] : undefined
